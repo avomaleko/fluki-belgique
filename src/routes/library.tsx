@@ -135,11 +135,11 @@ function LibraryPage() {
   const endIdx = Math.min(page * PAGE_SIZE, filtered.length);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
       <section className="relative overflow-hidden border-b border-border/40" style={{ background: "var(--gradient-hero)" }}>
-        <div className="container mx-auto px-4 py-12 sm:py-16 text-primary-foreground">
+        <div className="container mx-auto px-4 py-10 sm:py-14 md:py-16 text-primary-foreground">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight max-w-3xl">
             Biblioteca Musical
           </h1>
@@ -149,20 +149,22 @@ function LibraryPage() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-8">
-        <div className="flex flex-row items-center gap-2 sm:gap-4">
+      <section className="container mx-auto px-4 py-6 sm:py-8">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input placeholder="Pesquisar por título ou autor..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" maxLength={100} />
           </div>
-          <Button variant="outline" onClick={toggleSort} className="shrink-0">
-            <ArrowUpAZ className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">{search.sort === "asc" ? "A → Z" : "Z → A"}</span>
-            <span className="sm:hidden">{search.sort === "asc" ? "A-Z" : "Z-A"}</span>
-          </Button>
-          <Button asChild className="shrink-0">
-            <Link to="/upload"><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enviar conteúdo</span></Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={toggleSort} className="flex-1 sm:flex-none shrink-0">
+              <ArrowUpAZ className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{search.sort === "asc" ? "A → Z" : "Z → A"}</span>
+              <span className="sm:hidden">{search.sort === "asc" ? "A-Z" : "Z-A"}</span>
+            </Button>
+            <Button asChild className="flex-1 sm:flex-none shrink-0">
+              <Link to="/upload"><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enviar conteúdo</span><span className="sm:hidden">Enviar</span></Link>
+            </Button>
+          </div>
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
@@ -222,7 +224,7 @@ function LibraryPage() {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 pb-20">
+      <section className="container mx-auto px-4 pb-16 sm:pb-20 flex-1">
         {loading ? (
           <p className="text-muted-foreground">A carregar biblioteca...</p>
         ) : filtered.length === 0 ? (
@@ -241,11 +243,11 @@ function LibraryPage() {
               {totalPages > 1 && <span>Página {page} de {totalPages}</span>}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
               {paged.map((t) => (
                 <Link key={t.id} to="/track/$id" params={{ id: t.id }} className="group">
                   <Card className="h-full overflow-hidden border-border/60 transition hover:shadow-[var(--shadow-elegant)] hover:-translate-y-0.5">
-                    <div className="h-32 w-full" style={{ background: "var(--gradient-primary)" }}>
+                    <div className="h-32 sm:h-36 w-full" style={{ background: "var(--gradient-primary)" }}>
                       {t.image_paths[0] ? (
                         <CoverImage path={t.image_paths[0]} alt={t.title} />
                       ) : (
@@ -254,10 +256,10 @@ function LibraryPage() {
                         </div>
                       )}
                     </div>
-                    <CardContent className="p-5">
-                      <Badge variant="secondary" className="mb-2 text-sm px-3 py-1">{categoryLabel(t.category)}</Badge>
-                      <h3 className="font-semibold text-lg leading-tight group-hover:text-primary transition">{t.title}</h3>
-                      {t.author && <p className="mt-0.5 text-xs text-muted-foreground">por {t.author}</p>}
+                    <CardContent className="p-4 sm:p-5">
+                      <Badge variant="secondary" className="mb-2 text-xs sm:text-sm px-2.5 py-0.5">{categoryLabel(t.category)}</Badge>
+                      <h3 className="font-semibold text-base sm:text-lg leading-tight group-hover:text-primary transition line-clamp-2">{t.title}</h3>
+                      {t.author && <p className="mt-0.5 text-xs text-muted-foreground truncate">por {t.author}</p>}
                       {t.description && <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{t.description}</p>}
                       <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                         <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" /> PDF</span>
@@ -286,9 +288,7 @@ function LibraryPage() {
         )}
       </section>
 
-      <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        FLAUKI — Biblioteca Musical · Conteúdos religiosos com devoção
-      </footer>
+      <Footer />
     </div>
   );
 }
