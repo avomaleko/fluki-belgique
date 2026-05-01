@@ -16,6 +16,22 @@ export const Route = createFileRoute("/author/$name")({
   validateSearch: (s: Record<string, unknown>): AuthorSearch => ({
     page: typeof s.page === "number" ? s.page : typeof s.page === "string" ? parseInt(s.page, 10) || undefined : undefined,
   }),
+  head: ({ params }) => {
+    const decoded = (() => { try { return decodeURIComponent(params.name); } catch { return params.name; } })();
+    const title = `${decoded} — Cânticos · FLAUKI`;
+    const description = `Todos os cânticos arranjados por ${decoded} na Biblioteca Musical FLAUKI.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "profile" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+    };
+  },
 });
 
 const PAGE_SIZE = 12;
