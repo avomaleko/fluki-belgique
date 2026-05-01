@@ -19,6 +19,13 @@ import { fetchCategories, useCategories } from "@/lib/categories";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
+  head: () => ({
+    meta: [
+      { title: "Administração — FLAUKI" },
+      { name: "description", content: "Painel de administração da Biblioteca Musical FLAUKI." },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
 });
 
 type Profile = {

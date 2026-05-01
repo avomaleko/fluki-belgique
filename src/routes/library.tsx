@@ -16,6 +16,16 @@ type LibrarySearch = { q?: string; cats?: string; sort?: "asc" | "desc"; page?: 
 
 export const Route = createFileRoute("/library")({
   component: LibraryPage,
+  head: () => ({
+    meta: [
+      { title: "Biblioteca Musical — FLAUKI" },
+      { name: "description", content: "Pesquise e explore partituras, áudios e imagens religiosas, organizadas por categoria, na Biblioteca FLAUKI." },
+      { property: "og:title", content: "Biblioteca Musical — FLAUKI" },
+      { property: "og:description", content: "Pesquise e explore partituras, áudios e imagens religiosas, organizadas por categoria." },
+      { name: "twitter:title", content: "Biblioteca Musical — FLAUKI" },
+      { name: "twitter:description", content: "Pesquise e explore partituras, áudios e imagens religiosas." },
+    ],
+  }),
   validateSearch: (s: Record<string, unknown>): LibrarySearch => ({
     q: typeof s.q === "string" ? s.q : undefined,
     cats: typeof s.cats === "string" ? s.cats : undefined,
