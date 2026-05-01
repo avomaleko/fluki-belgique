@@ -1,24 +1,31 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, ScriptOnce } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
+
+const SITE_TITLE = "FLAUKI — Biblioteca Musical Espiritual";
+const SITE_DESC = "Biblioteca musical multimédia FLAUKI — partituras, áudios e imagens religiosas, inspiradas na tradição Kimbanguista, organizadas por categoria.";
+const OG_IMAGE = "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5f2bb628-b356-4e19-9bfa-5f12a3caebd8/id-preview-2a3a1078--6b45aeca-e79a-401d-b06c-0e0bf5330dea.lovable.app-1777119530651.png";
+
+// Aplica o tema guardado antes da hidratação para evitar "flash" claro→escuro.
+const themeBootstrap = `(function(){try{var t=localStorage.getItem("flauki-theme");if(t==="dark"){document.documentElement.classList.add("dark");}}catch(e){}})();`;
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Página não encontrada</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          A página que procura não existe ou foi movida.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            Voltar ao início
           </Link>
         </div>
       </div>
@@ -30,25 +37,25 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Biblioteca Musical FLAUKI" },
-      { name: "description", content: "Biblioteca musical multimédia FLAUKI — partituras, áudios e imagens religiosas organizadas por categoria." },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#0f3a4a" },
+      { title: SITE_TITLE },
+      { name: "description", content: SITE_DESC },
       { name: "author", content: "FLAUKI" },
-      { property: "og:title", content: "Biblioteca Musical FLAUKI" },
-      { property: "og:description", content: "Biblioteca musical multimédia FLAUKI — partituras, áudios e imagens religiosas organizadas por categoria." },
+      { property: "og:site_name", content: "FLAUKI" },
+      { property: "og:title", content: SITE_TITLE },
+      { property: "og:description", content: SITE_DESC },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Biblioteca Musical FLAUKI" },
-      { name: "twitter:description", content: "Biblioteca musical multimédia FLAUKI — partituras, áudios e imagens religiosas organizadas por categoria." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5f2bb628-b356-4e19-9bfa-5f12a3caebd8/id-preview-2a3a1078--6b45aeca-e79a-401d-b06c-0e0bf5330dea.lovable.app-1777119530651.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5f2bb628-b356-4e19-9bfa-5f12a3caebd8/id-preview-2a3a1078--6b45aeca-e79a-401d-b06c-0e0bf5330dea.lovable.app-1777119530651.png" },
+      { property: "og:locale", content: "pt_PT" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: SITE_TITLE },
+      { name: "twitter:description", content: SITE_DESC },
+      { property: "og:image", content: OG_IMAGE },
+      { name: "twitter:image", content: OG_IMAGE },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico" },
     ],
   }),
   shellComponent: RootShell,
@@ -58,11 +65,12 @@ export const Route = createRootRoute({
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <ScriptOnce>{themeBootstrap}</ScriptOnce>
         {children}
         <Scripts />
       </body>
