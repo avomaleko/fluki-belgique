@@ -19,6 +19,15 @@ import { Upload as UploadIcon, Hourglass, FileText, Music as MusicIcon, Image as
 
 export const Route = createFileRoute("/upload")({
   component: UploadPage,
+  head: () => ({
+    meta: [
+      { title: "Enviar conteúdo — FLAUKI" },
+      { name: "description", content: "Partilhe partituras, áudios e imagens com a Biblioteca Musical FLAUKI. Os envios são revistos pelo administrador." },
+      { property: "og:title", content: "Enviar conteúdo — FLAUKI" },
+      { property: "og:description", content: "Partilhe partituras, áudios e imagens com a Biblioteca Musical FLAUKI." },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
 });
 
 const MAX_PDF = 25 * 1024 * 1024;

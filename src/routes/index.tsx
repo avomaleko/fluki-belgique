@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Header } from "@/components/app/Header";
+import { Footer } from "@/components/app/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Library, Music2, Heart, BookOpenCheck, ArrowRight, Mail, Upload } from "lucide-react";
@@ -16,23 +17,23 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
       <section className="relative overflow-hidden border-b border-border/40" style={{ background: "var(--gradient-hero)" }}>
-        <div className="container mx-auto px-4 py-20 sm:py-28 text-primary-foreground">
-          <p className="text-sm uppercase tracking-[0.2em] opacity-90">Biblioteca Musical · FLAUKI</p>
-          <h1 className="mt-3 text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight max-w-3xl">
+        <div className="container mx-auto px-4 py-14 sm:py-20 md:py-28 text-primary-foreground">
+          <p className="text-xs sm:text-sm uppercase tracking-[0.2em] opacity-90">Biblioteca Musical · FLAUKI</p>
+          <h1 className="mt-3 text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight max-w-3xl">
             Música, palavra e oração — num só lugar.
           </h1>
-          <p className="mt-5 max-w-2xl text-base sm:text-lg opacity-90">
+          <p className="mt-4 sm:mt-5 max-w-2xl text-sm sm:text-lg opacity-90">
             A Biblioteca - FLAUKI reúne hinos em partituras, áudios e imagens de cânticos de Deus para acompanhar o seu tempo de adoração, louvor e meditação. Inspirada na tradição Kimbanguista, oferecendo um espaço sereno para aprender e partilhar.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button size="lg" asChild>
+          <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
+            <Button size="lg" asChild className="w-full sm:w-auto">
               <Link to="/library">Explorar a Biblioteca <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
-            <Button size="lg" variant="outline" className="bg-background/10 border-primary-foreground/30 text-primary-foreground hover:bg-background/20" asChild>
+            <Button size="lg" variant="outline" className="w-full sm:w-auto bg-background/10 border-primary-foreground/30 text-primary-foreground hover:bg-background/20" asChild>
               <a href="https://partisolfa.lovable.app" target="_blank" rel="noreferrer">Visitar Partisolfa</a>
             </Button>
           </div>
@@ -105,9 +106,7 @@ function HomePage() {
         </Card>
       </section>
 
-      <footer className="border-t border-border/60 py-8 text-center text-sm text-muted-foreground">
-        FLAUKI — Biblioteca Musical · Conteúdos religiosos com devoção
-      </footer>
+      <Footer />
     </div>
   );
 }

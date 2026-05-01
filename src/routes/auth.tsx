@@ -12,6 +12,13 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
+  head: () => ({
+    meta: [
+      { title: "Entrar ou registar — FLAUKI" },
+      { name: "description", content: "Aceda à sua conta FLAUKI para enviar partituras e áudios para a Biblioteca Musical." },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
 });
 
 function AuthPage() {

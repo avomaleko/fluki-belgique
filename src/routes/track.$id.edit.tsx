@@ -18,6 +18,13 @@ import { ArrowLeft, FileText, Music as MusicIcon, Image as ImgIcon, Trash2, Uplo
 
 export const Route = createFileRoute("/track/$id/edit")({
   component: EditTrackPage,
+  head: () => ({
+    meta: [
+      { title: "Editar conteúdo — FLAUKI" },
+      { name: "description", content: "Edite os metadados e ficheiros do seu envio na Biblioteca Musical FLAUKI." },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
 });
 
 const MAX_PDF = 25 * 1024 * 1024;

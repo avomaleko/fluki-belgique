@@ -14,6 +14,58 @@ import { TrackHistory } from "@/components/app/TrackHistory";
 
 export const Route = createFileRoute("/track/$id")({
   component: TrackPage,
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("tracks")
+      .select("title,author,description,image_paths,status")
+      .eq("id", params.id)
+      .maybeSingle();
+    if (!data || data.status !== "approved") return { meta: null as null | { title: string; description: string; image: string | null } };
+    let image: string | null = null;
+    const firstImg = (data.image_paths as string[] | null)?.[0];
+    if (firstImg) {
+      try {
+        const { data: signed } = await supabase.storage.from("images").createSignedUrl(firstImg, 60 * 60 * 24 * 7);
+        image = signed?.signedUrl ?? null;
+      } catch {
+        image = null;
+      }
+    }
+    const description = (data.description?.toString().trim().slice(0, 200)) ||
+      `${data.title}${data.author ? ` — arranjado por ${data.author}` : ""} · Biblioteca Musical FLAUKI`;
+    return {
+      meta: {
+        title: `${data.title}${data.author ? ` — ${data.author}` : ""} · FLAUKI`,
+        description,
+        image,
+      },
+    };
+  },
+  head: ({ loaderData }) => {
+    const m = loaderData?.meta;
+    if (!m) {
+      return {
+        meta: [
+          { title: "Conteúdo — FLAUKI" },
+          { name: "description", content: "Conteúdo da Biblioteca Musical FLAUKI." },
+        ],
+      };
+    }
+    const meta: Array<Record<string, string>> = [
+      { title: m.title },
+      { name: "description", content: m.description },
+      { property: "og:title", content: m.title },
+      { property: "og:description", content: m.description },
+      { property: "og:type", content: "article" },
+      { name: "twitter:title", content: m.title },
+      { name: "twitter:description", content: m.description },
+    ];
+    if (m.image) {
+      meta.push({ property: "og:image", content: m.image });
+      meta.push({ name: "twitter:image", content: m.image });
+    }
+    return { meta };
+  },
 });
 
 type Track = {
