@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSignedUrl } from "@/lib/storage";
 import { Header } from "@/components/app/Header";
+import { Footer } from "@/components/app/Footer";
 import { useCategories, categoryLabel } from "@/lib/categories";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
