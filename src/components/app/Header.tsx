@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Library, Upload, Shield, LogIn, LogOut, Moon, Sun, User as UserIcon } from "lucide-react";
+import { Library, Upload, Shield, LogIn, LogOut, Moon, Sun, User as UserIcon, Tag, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/app/AppSidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { useCategories } from "@/lib/categories";
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -23,6 +24,7 @@ function initialsOf(name: string) {
 export function Header() {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const { categories } = useCategories();
   const [dark, setDark] = useState(false);
   const [displayName, setDisplayName] = useState<string>("");
 
@@ -50,15 +52,44 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-lg">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
+      <div className="container mx-auto flex h-16 items-center justify-between gap-2 px-3 sm:px-4">
+        <div className="flex items-center gap-2 min-w-0">
           <AppSidebar />
-          <Link to="/" className="flex items-center gap-2 font-semibold">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: "var(--gradient-primary)" }}>
+          <Link to="/" className="flex items-center gap-2 font-semibold min-w-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0" style={{ background: "var(--gradient-primary)" }}>
               <Library className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="hidden sm:inline text-lg tracking-tight">FLAUKI</span>
+            <span className="hidden sm:inline text-lg tracking-tight truncate">FLAUKI</span>
           </Link>
+
+          {/* Desktop nav: Biblioteca + Categorias dropdown */}
+          <nav className="hidden md:flex items-center gap-1 ml-3">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/library">Biblioteca</Link>
+            </Button>
+            {categories.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1">
+                    <Tag className="h-4 w-4" />
+                    Categorias
+                    <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 max-h-[70vh] overflow-y-auto">
+                  <DropdownMenuLabel>Explorar por categoria</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {categories.map((c) => (
+                    <DropdownMenuItem key={c.value} asChild>
+                      <Link to="/library" search={{ cats: c.value, page: 1 }}>
+                        {c.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </nav>
         </div>
 
         <nav className="flex items-center gap-1 sm:gap-2">

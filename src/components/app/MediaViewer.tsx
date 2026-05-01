@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Download, ExternalLink, FileText, Loader2, Smartphone } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ExternalLink, FileText, Loader2, Smartphone, Maximize2, Minimize2 } from "lucide-react";
 import { getSignedUrl, getSignedUrls } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -43,6 +43,36 @@ export function MediaViewer({ pdfPath, audioPath, imagePaths, title, allowDownlo
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [pdfError, setPdfError] = useState(false);
+  const [pdfFullscreen, setPdfFullscreen] = useState(false);
+
+  // Responsive PDF height — usa 100svh em mobile (sem barras do browser),
+  // descontando header (~64) e barra de ações (~56) com folga.
+  const [pdfHeight, setPdfHeight] = useState<string>("70vh");
+  useEffect(() => {
+    const compute = () => {
+      if (typeof window === "undefined") return;
+      const vh = window.innerHeight;
+      // mobile: usa quase todo o ecrã; desktop: 70-80vh
+      if (window.innerWidth < 640) {
+        setPdfHeight(`${Math.max(360, vh - 220)}px`);
+      } else {
+        setPdfHeight(`${Math.max(480, Math.min(900, vh - 240))}px`);
+      }
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
+
+  // Bloquear scroll do body em fullscreen
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (pdfFullscreen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [pdfFullscreen]);
 
   useEffect(() => {
     let active = true;
@@ -73,23 +103,33 @@ export function MediaViewer({ pdfPath, audioPath, imagePaths, title, allowDownlo
   const nextImage = () =>
     setLightboxIndex((i) => (i === null ? null : (i + 1) % imageUrls.length));
 
+  const renderPdfIframe = (heightStyle: string) => (
+    <iframe
+      src={isMobile ? (googleViewerUrl ?? undefined) : `${pdfUrl}#toolbar=1&view=FitH`}
+      className="w-full bg-background"
+      style={{ height: heightStyle }}
+      title={title}
+      onError={() => setPdfError(true)}
+    />
+  );
+
   return (
     <div className="space-y-6">
       {audioUrl && (
         <Card>
-          <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
+          <CardContent className="p-3 sm:p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <p className="text-sm font-medium">Áudio</p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" variant="outline" asChild>
                   <a href={audioUrl} target="_blank" rel="noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-2" />Abrir
+                    <ExternalLink className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Abrir</span>
                   </a>
                 </Button>
                 {allowDownload && (
                   <Button size="sm" variant="outline" asChild>
                     <a href={audioUrl} target="_blank" rel="noreferrer" download onClick={onDownload}>
-                      <Download className="h-4 w-4 mr-2" />Descarregar
+                      <Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Descarregar</span>
                     </a>
                   </Button>
                 )}
@@ -108,48 +148,37 @@ export function MediaViewer({ pdfPath, audioPath, imagePaths, title, allowDownlo
       )}
 
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 bg-muted/50 px-4 py-2 border-b border-border">
+        <div className="flex flex-wrap items-center justify-between gap-2 bg-muted/50 px-3 sm:px-4 py-2 border-b border-border">
           <span className="text-sm font-medium">Partitura (PDF)</span>
           <div className="flex flex-wrap gap-2">
             {pdfUrl && (
+              <Button size="sm" variant="outline" onClick={() => setPdfFullscreen(true)}>
+                <Maximize2 className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Ecrã cheio</span>
+              </Button>
+            )}
+            {pdfUrl && (
               <Button size="sm" variant="outline" asChild>
                 <a href={pdfUrl} target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />Abrir em nova aba
+                  <ExternalLink className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Nova aba</span>
                 </a>
               </Button>
             )}
             {allowDownload && pdfUrl && (
               <Button size="sm" variant="outline" asChild>
                 <a href={pdfUrl} target="_blank" rel="noreferrer" download onClick={onDownload}>
-                  <Download className="h-4 w-4 mr-2" />Descarregar
+                  <Download className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Descarregar</span>
                 </a>
               </Button>
             )}
           </div>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center h-[60vh] bg-muted/20">
+          <div className="flex items-center justify-center bg-muted/20" style={{ height: pdfHeight }}>
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : pdfUrl ? (
           <div className="relative bg-background">
-            {/* On mobile, prefer Google Docs viewer (renders without native plugin).
-                On desktop, use native PDF rendering via iframe. */}
-            {isMobile ? (
-              <iframe
-                src={googleViewerUrl ?? undefined}
-                className="w-full h-[80vh] bg-background"
-                title={title}
-                onError={() => setPdfError(true)}
-              />
-            ) : (
-              <iframe
-                src={`${pdfUrl}#toolbar=1&view=FitH`}
-                className="w-full h-[80vh] bg-background"
-                title={title}
-                onError={() => setPdfError(true)}
-              />
-            )}
+            {renderPdfIframe(pdfHeight)}
             {pdfError && (
               <div className="p-4 text-center text-sm text-muted-foreground border-t border-border">
                 Não foi possível pré-visualizar aqui. Use os botões acima para abrir ou descarregar.
@@ -158,7 +187,7 @@ export function MediaViewer({ pdfPath, audioPath, imagePaths, title, allowDownlo
             {isMobile && (
               <div className="flex items-center justify-center gap-2 p-3 text-xs text-muted-foreground bg-muted/30 border-t border-border">
                 <Smartphone className="h-3.5 w-3.5" />
-                <span>Para melhor experiência no telemóvel, toque em "Abrir em nova aba".</span>
+                <span>Para melhor leitura, toque em "Ecrã cheio" ou "Nova aba".</span>
               </div>
             )}
           </div>
@@ -169,6 +198,28 @@ export function MediaViewer({ pdfPath, audioPath, imagePaths, title, allowDownlo
           </div>
         )}
       </Card>
+
+      {/* PDF fullscreen overlay */}
+      {pdfFullscreen && pdfUrl && (
+        <div className="fixed inset-0 z-50 bg-background flex flex-col">
+          <div className="flex items-center justify-between gap-2 border-b border-border bg-muted/50 px-3 py-2">
+            <p className="text-sm font-medium truncate">{title}</p>
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" variant="outline" asChild>
+                <a href={pdfUrl} target="_blank" rel="noreferrer">
+                  <ExternalLink className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Nova aba</span>
+                </a>
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setPdfFullscreen(false)}>
+                <Minimize2 className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Fechar</span>
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0">
+            {renderPdfIframe("100%")}
+          </div>
+        </div>
+      )}
 
       {imageUrls.length > 0 && (
         <div>
