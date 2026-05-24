@@ -359,14 +359,102 @@ function AdminPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="tracks" className="space-y-4">
+        <Tabs defaultValue="all-tracks" className="space-y-4">
           <TabsList className="flex flex-wrap h-auto justify-start gap-1 bg-muted/50 p-1">
-            <TabsTrigger value="tracks" className="gap-1.5"><FileCheck2 className="h-4 w-4" />Conteúdos {pendingTracks.length > 0 && <Badge variant="default" className="h-5 ml-1">{pendingTracks.length}</Badge>}</TabsTrigger>
+            <TabsTrigger value="all-tracks" className="gap-1.5"><FileText className="h-4 w-4" />Todos os conteúdos</TabsTrigger>
+            <TabsTrigger value="tracks" className="gap-1.5"><FileCheck2 className="h-4 w-4" />Pendentes {pendingTracks.length > 0 && <Badge variant="default" className="h-5 ml-1">{pendingTracks.length}</Badge>}</TabsTrigger>
             <TabsTrigger value="requests" className="gap-1.5"><ListChecks className="h-4 w-4" />Pedidos {pendingProfiles.length > 0 && <Badge variant="default" className="h-5 ml-1">{pendingProfiles.length}</Badge>}</TabsTrigger>
             <TabsTrigger value="users" className="gap-1.5"><Users className="h-4 w-4" />Utilizadores</TabsTrigger>
             <TabsTrigger value="messages" className="gap-1.5"><Mail className="h-4 w-4" />Mensagens {unreadCount > 0 && <Badge variant="default" className="h-5 ml-1">{unreadCount}</Badge>}</TabsTrigger>
             <TabsTrigger value="categories" className="gap-1.5"><Tag className="h-4 w-4" />Categorias</TabsTrigger>
           </TabsList>
+
+          {/* TODOS OS CONTEÚDOS */}
+          <TabsContent value="all-tracks">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Todos os conteúdos ({allTracks.length})</CardTitle>
+                  <Input
+                    placeholder="Pesquisar por título, autor ou categoria..."
+                    value={allTracksQuery}
+                    onChange={(e) => { setAllTracksQuery(e.target.value); setAllTracksPage(1); }}
+                    className="w-full sm:w-72"
+                    maxLength={100}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(() => {
+                  const q = allTracksQuery.trim().toLowerCase();
+                  const filtered = q
+                    ? allTracks.filter((t) =>
+                        (t.title ?? "").toLowerCase().includes(q) ||
+                        (t.author ?? "").toLowerCase().includes(q) ||
+                        (t.category ?? "").toLowerCase().includes(q)
+                      )
+                    : allTracks;
+                  const totalP = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+                  const curP = Math.min(allTracksPage, totalP);
+                  const pageItems = filtered.slice((curP - 1) * PAGE_SIZE, curP * PAGE_SIZE);
+                  if (filtered.length === 0) return <p className="text-sm text-muted-foreground py-6 text-center">Nenhum conteúdo encontrado.</p>;
+                  return (
+                    <>
+                      {pageItems.map((t) => (
+                        <div key={t.id} className="flex items-start justify-between gap-3 rounded-lg border border-border p-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{t.title}</p>
+                            <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground items-center">
+                              {t.author && <span>por {t.author}</span>}
+                              <Badge variant="secondary" className="text-xs">{t.category}</Badge>
+                              <Badge variant={t.status === "approved" ? "default" : t.status === "rejected" ? "destructive" : "outline"} className="text-xs">{t.status}</Badge>
+                              <span>· {new Date(t.created_at).toLocaleDateString("pt-PT")}</span>
+                            </div>
+                            <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
+                              <span className="inline-flex items-center gap-1"><FileText className="h-3 w-3" /> PDF</span>
+                              {t.audio_path && <span className="inline-flex items-center gap-1"><MusicIcon className="h-3 w-3" /> Áudio</span>}
+                              {t.image_paths?.length > 0 && <span>{t.image_paths.length} img</span>}
+                            </div>
+                          </div>
+                          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                            <Button asChild size="sm" variant="outline">
+                              <Link to="/track/$id" params={{ id: t.id }}><Eye className="h-3.5 w-3.5 mr-1" />Ver</Link>
+                            </Button>
+                            <Button asChild size="sm" variant="outline">
+                              <Link to="/track/$id/edit" params={{ id: t.id }}><Pencil className="h-3.5 w-3.5 mr-1" />Editar</Link>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              disabled={busy}
+                              onClick={async () => {
+                                if (!confirm(`Eliminar "${t.title}"? Remove PDF, áudio e imagens.`)) return;
+                                setBusy(true);
+                                try {
+                                  await deleteTrackAndAssets({ id: t.id, pdf_path: t.pdf_path, audio_path: t.audio_path, image_paths: t.image_paths });
+                                  toast.success("Conteúdo eliminado.");
+                                  load();
+                                } catch (err: any) {
+                                  toast.error(err.message ?? "Erro ao eliminar.");
+                                } finally {
+                                  setBusy(false);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      <Pager page={curP} totalPages={totalP} onChange={setAllTracksPage} />
+                    </>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+
 
           {/* CONTEÚDOS PENDENTES */}
           <TabsContent value="tracks">
