@@ -15,7 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { Check, X, Shield, Mail, Trash2, MailOpen, ArrowUpDown, ChevronLeft, ChevronRight, FileText, Eye, Music as MusicIcon, Tag, Plus, Pencil, Users, KeyRound, Inbox, ListChecks, FileCheck2 } from "lucide-react";
 import { getSignedUrl } from "@/lib/storage";
+import { deleteTrackAndAssets } from "@/lib/tracks";
 import { fetchCategories, useCategories } from "@/lib/categories";
+
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -50,6 +52,8 @@ type PendingTrack = {
   uploaded_by: string | null;
   status: string;
 };
+type AdminTrack = PendingTrack & { uploader_name?: string | null };
+
 
 const PAGE_SIZE = 25;
 
