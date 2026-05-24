@@ -94,6 +94,8 @@ function AdminPage() {
   const [allTracks, setAllTracks] = useState<AdminTrack[]>([]);
   const [allTracksQuery, setAllTracksQuery] = useState("");
   const [allTracksPage, setAllTracksPage] = useState(1);
+  const [previewTrack, setPreviewTrack] = useState<PendingTrack | null>(null);
+
 
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
