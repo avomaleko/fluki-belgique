@@ -113,6 +113,9 @@ function AdminPage() {
     const { data: rs } = await supabase.from("user_roles").select("user_id, role");
     const { data: msgs } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
     const { data: tks } = await supabase.from("tracks").select("*").eq("status", "pending").order("created_at", { ascending: false });
+    const { data: allTks } = await supabase.from("tracks").select("*").order("created_at", { ascending: false }).limit(500);
+    setAllTracks((allTks ?? []) as AdminTrack[]);
+
     setProfiles((profs ?? []) as Profile[]);
     const map: Record<string, string[]> = {};
     (rs as RoleRow[] | null)?.forEach((r) => {
