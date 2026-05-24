@@ -489,6 +489,28 @@ function UploadPage() {
                           <Pencil className="h-3.5 w-3.5 mr-1" />Editar
                         </Link>
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={async () => {
+                          if (!confirm(`Eliminar "${s.title}"? Esta ação remove o PDF, áudio e imagens associados.`)) return;
+                          try {
+                            await deleteTrackAndAssets({
+                              id: s.id,
+                              pdf_path: s.pdf_path,
+                              audio_path: s.audio_path,
+                              image_paths: s.image_paths,
+                            });
+                            toast.success("Conteúdo eliminado.");
+                            loadMySubmissions();
+                          } catch (err: any) {
+                            toast.error(err.message ?? "Erro ao eliminar.");
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+
                     </div>
                   </div>
                   {s.status === "rejected" && (
