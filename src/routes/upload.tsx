@@ -15,20 +15,23 @@ import { useCategories, fetchCategories, categoryLabel } from "@/lib/categories"
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Upload as UploadIcon, Hourglass, FileText, Music as MusicIcon, Image as ImgIcon, Plus, AlertCircle, Eye, Pencil } from "lucide-react";
+import { Upload as UploadIcon, FileText, Music as MusicIcon, Image as ImgIcon, Plus, AlertCircle, Eye, Pencil, Trash2 } from "lucide-react";
+import { deleteTrackAndAssets } from "@/lib/tracks";
+
 
 export const Route = createFileRoute("/upload")({
   component: UploadPage,
   head: () => ({
     meta: [
       { title: "Enviar conteúdo — FLAUKI" },
-      { name: "description", content: "Partilhe partituras, áudios e imagens com a Biblioteca Musical FLAUKI. Os envios são revistos pelo administrador." },
+      { name: "description", content: "Partilhe partituras, áudios e imagens com a Biblioteca Musical FLAUKI." },
       { property: "og:title", content: "Enviar conteúdo — FLAUKI" },
       { property: "og:description", content: "Partilhe partituras, áudios e imagens com a Biblioteca Musical FLAUKI." },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
 });
+
 
 const MAX_PDF = 25 * 1024 * 1024;
 const MAX_AUDIO = 30 * 1024 * 1024;
@@ -89,10 +92,10 @@ function validateImage(file: File): string | null {
   return null;
 }
 
-type Submission = { id: string; title: string; status: string; created_at: string; rejection_reason: string | null };
+type Submission = { id: string; title: string; status: string; created_at: string; rejection_reason: string | null; pdf_path: string | null; audio_path: string | null; image_paths: string[] | null };
 
 function UploadPage() {
-  const { user, canUpload, uploadStatus, loading, refresh, isAdmin } = useAuth();
+  const { user, canUpload, loading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { categories } = useCategories();
 
@@ -117,10 +120,11 @@ function UploadPage() {
     if (!user) return;
     const { data } = await supabase
       .from("tracks")
-      .select("id,title,status,created_at,rejection_reason")
+      .select("id,title,status,created_at,rejection_reason,pdf_path,audio_path,image_paths")
       .eq("uploaded_by", user.id)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50);
+
     setMySubmissions((data ?? []) as Submission[]);
   };
 
@@ -200,48 +204,22 @@ function UploadPage() {
     );
   }
 
-  const requestUploadPermission = async () => {
-    const { error } = await supabase.from("profiles").update({ upload_status: "pending" }).eq("id", user.id);
-    if (error) return toast.error(error.message);
-    toast.success("Pedido enviado! Aguarde aprovação do administrador.");
-    refresh();
-  };
-
   if (!canUpload) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <div className="container mx-auto px-4 py-16 max-w-lg">
+        <div className="container mx-auto px-4 py-16 max-w-md">
           <Card>
-            <CardHeader><CardTitle>Permissão de envio</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {uploadStatus === "pending" ? (
-                <div className="rounded-lg border border-border p-4 flex items-start gap-3">
-                  <Hourglass className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium">Pedido em análise</p>
-                    <p className="text-sm text-muted-foreground">O administrador irá rever o seu pedido em breve.</p>
-                  </div>
-                </div>
-              ) : uploadStatus === "rejected" ? (
-                <>
-                  <p className="text-sm text-destructive">O seu pedido anterior foi rejeitado.</p>
-                  <Button onClick={requestUploadPermission}>Pedir novamente</Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    A sua conta ainda não tem permissão para enviar. Solicite acesso ao administrador.
-                  </p>
-                  <Button onClick={requestUploadPermission}><UploadIcon className="h-4 w-4 mr-2" /> Solicitar permissão de envio</Button>
-                </>
-              )}
+            <CardContent className="py-10 text-center space-y-4">
+              <p>Precisa de iniciar sessão para enviar conteúdos.</p>
+              <Button asChild><Link to="/auth">Entrar / Registar</Link></Button>
             </CardContent>
           </Card>
         </div>
       </div>
     );
   }
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -285,25 +263,22 @@ function UploadPage() {
         audio_path: audioPath,
         image_paths: imagePaths,
         uploaded_by: user.id,
-        status: isAdmin ? "approved" : "pending",
+        status: "approved",
       });
       if (insErr) throw insErr;
 
-      if (isAdmin) {
-        toast.success("Conteúdo publicado!");
-        navigate({ to: "/library" });
-      } else {
-        toast.success("Conteúdo enviado para aprovação do administrador.");
-        setTitle(""); setAuthor(""); setDescription(""); setCategory("");
-        setPdf(null); setAudio(null); setImages([]);
-        loadMySubmissions();
-      }
+      toast.success("Conteúdo publicado!");
+      setTitle(""); setAuthor(""); setDescription(""); setCategory("");
+      setPdf(null); setAudio(null); setImages([]);
+      loadMySubmissions();
+      if (isAdmin) navigate({ to: "/library" });
     } catch (err: any) {
       toast.error(err.message ?? "Erro no envio");
     } finally {
       setSubmitting(false);
     }
   };
+
 
   const createCategory = async () => {
     const label = newCatLabel.trim();
@@ -514,6 +489,28 @@ function UploadPage() {
                           <Pencil className="h-3.5 w-3.5 mr-1" />Editar
                         </Link>
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={async () => {
+                          if (!confirm(`Eliminar "${s.title}"? Esta ação remove o PDF, áudio e imagens associados.`)) return;
+                          try {
+                            await deleteTrackAndAssets({
+                              id: s.id,
+                              pdf_path: s.pdf_path,
+                              audio_path: s.audio_path,
+                              image_paths: s.image_paths,
+                            });
+                            toast.success("Conteúdo eliminado.");
+                            loadMySubmissions();
+                          } catch (err: any) {
+                            toast.error(err.message ?? "Erro ao eliminar.");
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+
                     </div>
                   </div>
                   {s.status === "rejected" && (

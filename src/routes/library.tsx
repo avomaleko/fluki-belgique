@@ -75,10 +75,11 @@ function LibraryPage() {
   };
   const navigate = Route.useNavigate();
   const { categories } = useCategories();
-  const selectedCats = useMemo(
+  const selectedCats = useMemo<string[]>(
     () => (search.cats ? search.cats.split(",").filter(Boolean) : []),
     [search.cats]
   );
+
 
   const [catModalOpen, setCatModalOpen] = useState(false);
   const [draftCats, setDraftCats] = useState<string[]>(selectedCats);
