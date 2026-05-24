@@ -91,7 +91,10 @@ function AdminPage() {
   const [usersQuery, setUsersQuery] = useState("");
   const [selected, setSelected] = useState<ContactMsg | null>(null);
   const [pendingTracks, setPendingTracks] = useState<PendingTrack[]>([]);
-  const [previewTrack, setPreviewTrack] = useState<PendingTrack | null>(null);
+  const [allTracks, setAllTracks] = useState<AdminTrack[]>([]);
+  const [allTracksQuery, setAllTracksQuery] = useState("");
+  const [allTracksPage, setAllTracksPage] = useState(1);
+
   const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
