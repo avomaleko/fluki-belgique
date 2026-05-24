@@ -92,7 +92,7 @@ function validateImage(file: File): string | null {
   return null;
 }
 
-type Submission = { id: string; title: string; status: string; created_at: string; rejection_reason: string | null };
+type Submission = { id: string; title: string; status: string; created_at: string; rejection_reason: string | null; pdf_path: string | null; audio_path: string | null; image_paths: string[] | null };
 
 function UploadPage() {
   const { user, canUpload, loading, isAdmin } = useAuth();
@@ -120,10 +120,11 @@ function UploadPage() {
     if (!user) return;
     const { data } = await supabase
       .from("tracks")
-      .select("id,title,status,created_at,rejection_reason")
+      .select("id,title,status,created_at,rejection_reason,pdf_path,audio_path,image_paths")
       .eq("uploaded_by", user.id)
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(50);
+
     setMySubmissions((data ?? []) as Submission[]);
   };
 
