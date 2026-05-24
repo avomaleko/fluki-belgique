@@ -112,8 +112,9 @@ function AuthPage() {
                     {loading ? "A criar..." : "Criar conta"}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Após criar conta, peça permissão de upload em <Link to="/upload" className="underline">Enviar</Link>.
+                    Após criar conta, já pode partilhar conteúdos diretamente em <Link to="/upload" className="underline">Enviar</Link>.
                   </p>
+
                 </form>
               </TabsContent>
             </Tabs>

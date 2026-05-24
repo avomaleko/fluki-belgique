@@ -57,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isAdmin = roles.includes("admin");
-  const canUpload = isAdmin || roles.includes("uploader");
+  // Self-service uploads: any signed-in account may upload.
+  const canUpload = !!session?.user;
+
 
   const value: AuthContextValue = {
     session,
