@@ -72,18 +72,18 @@ function ContactPage() {
     }
 
     setLoading(true);
-    const { data, error } = await supabase
+    // Não lemos a linha de volta: as regras de segurança (corretamente) não
+    // permitem leitura das mensagens a visitantes — só ao administrador.
+    const { error } = await supabase
       .from("contact_messages")
       .insert({
         name: parsed.data.name,
         email: parsed.data.email && parsed.data.email.length > 0 ? parsed.data.email : null,
         subject: null,
         message: parsed.data.message,
-      })
-      .select("id")
-      .single();
+      });
     setLoading(false);
-    if (error || !data?.id) {
+    if (error) {
       return toast.error("Não foi possível enviar a sua mensagem. Tente novamente.", {
         description: error?.message,
       });
