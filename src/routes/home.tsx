@@ -5,12 +5,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Library, Music2, Heart, BookOpenCheck, ArrowRight, Mail, Upload } from "lucide-react";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/home")({
   component: HomePage,
   head: () => ({
     meta: [
-      { title: "FLAUKI — Biblioteca Musical Espiritual" },
+      { title: "Página Inicial — FLAUKI Biblioteca Musical" },
       { name: "description", content: "Plataforma de partituras, áudios e imagens religiosas inspirada na tradição Kimbanguista. Acesso aberto a todos os fiéis." },
+      { property: "og:title", content: "Página Inicial — FLAUKI Biblioteca Musical" },
+      { property: "og:description", content: "Partituras, áudios e imagens de cânticos para adoração, louvor e meditação." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Página Inicial — FLAUKI" },
+      { name: "twitter:description", content: "Partituras, áudios e imagens de cânticos para adoração e louvor." },
     ],
   }),
 });
