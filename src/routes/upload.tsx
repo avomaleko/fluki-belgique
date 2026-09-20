@@ -14,8 +14,7 @@ import { useCategories, fetchCategories, categoryLabel } from "@/lib/categories"
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Upload as UploadIcon, FileText, Music as MusicIcon, Image as ImgIcon, Plus, AlertCircle, Eye, Pencil, Trash2 } from "lucide-react";
-import { deleteTrackAndAssets } from "@/lib/tracks";
+import { FileText, Music as MusicIcon, Image as ImgIcon, Plus } from "lucide-react";
 
 
 export const Route = createFileRoute("/upload")({
@@ -90,7 +89,6 @@ function validateImage(file: File): string | null {
   return null;
 }
 
-type Submission = { id: string; title: string; status: string; created_at: string; rejection_reason: string | null; pdf_path: string | null; audio_path: string | null; image_paths: string[] | null };
 
 function UploadPage() {
   const { user, canUpload, loading, isAdmin } = useAuth();
@@ -106,30 +104,6 @@ function UploadPage() {
   const [submitting, setSubmitting] = useState(false);
   const [authorSuggestions, setAuthorSuggestions] = useState<string[]>([]);
   const [showAuthorList, setShowAuthorList] = useState(false);
-  const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
-
-  // New category dialog (admin only)
-  const [newCatOpen, setNewCatOpen] = useState(false);
-  const [newCatLabel, setNewCatLabel] = useState("");
-  const [newCatBusy, setNewCatBusy] = useState(false);
-
-  const loadMySubmissions = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("tracks")
-      .select("id,title,status,created_at,rejection_reason,pdf_path,audio_path,image_paths")
-      .eq("uploaded_by", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    setMySubmissions((data ?? []) as Submission[]);
-  };
-
-  useEffect(() => {
-    if (canUpload && user) loadMySubmissions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canUpload, user?.id]);
-
   useEffect(() => {
     supabase
       .from("tracks")
