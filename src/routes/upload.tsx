@@ -7,7 +7,6 @@ import { Header } from "@/components/app/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,18 +22,18 @@ export const Route = createFileRoute("/upload")({
   component: UploadPage,
   head: () => ({
     meta: [
-      { title: "Enviar conteúdo — FLAUKI" },
-      { name: "description", content: "Partilhe partituras, áudios e imagens com a Biblioteca Musical FLAUKI." },
-      { property: "og:title", content: "Enviar conteúdo — FLAUKI" },
-      { property: "og:description", content: "Partilhe partituras, áudios e imagens com a Biblioteca Musical FLAUKI." },
+      { title: "Enviar nova música — FLAUKI" },
+      { name: "description", content: "Partilhe a sua música — partitura em PDF, áudio MP3 e imagens — com a Biblioteca Musical FLAUKI." },
+      { property: "og:title", content: "Enviar nova música — FLAUKI" },
+      { property: "og:description", content: "Partilhe a sua música com a Biblioteca Musical FLAUKI." },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
 });
 
 
-const MAX_PDF = 25 * 1024 * 1024;
-const MAX_AUDIO = 30 * 1024 * 1024;
+const MAX_PDF = 10 * 1024 * 1024;
+const MAX_AUDIO = 10 * 1024 * 1024;
 const MAX_IMAGE = 8 * 1024 * 1024;
 const MAX_IMAGES = 10;
 const ALLOWED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -54,7 +53,6 @@ const metaSchema = z.object({
     })
     .optional()
     .or(z.literal("")),
-  description: z.string().trim().max(1000).optional().or(z.literal("")),
   category: z.string().min(1, "Categoria obrigatória"),
 });
 
@@ -101,7 +99,6 @@ function UploadPage() {
 
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
-  const [description, setDescription] = useState("");
   const [category, setCategory] = useState<string>("");
   const [pdf, setPdf] = useState<File | null>(null);
   const [audio, setAudio] = useState<File | null>(null);
@@ -195,7 +192,7 @@ function UploadPage() {
         <div className="container mx-auto px-4 py-16 max-w-md">
           <Card>
             <CardContent className="py-10 text-center space-y-4">
-              <p>Precisa de iniciar sessão para enviar conteúdos.</p>
+              <p>Precisa de iniciar sessão para enviar músicas.</p>
               <Button asChild><Link to="/auth">Entrar / Registar</Link></Button>
             </CardContent>
           </Card>
@@ -211,7 +208,7 @@ function UploadPage() {
         <div className="container mx-auto px-4 py-16 max-w-md">
           <Card>
             <CardContent className="py-10 text-center space-y-4">
-              <p>Precisa de iniciar sessão para enviar conteúdos.</p>
+              <p>Precisa de iniciar sessão para enviar músicas.</p>
               <Button asChild><Link to="/auth">Entrar / Registar</Link></Button>
             </CardContent>
           </Card>
@@ -225,8 +222,7 @@ function UploadPage() {
     e.preventDefault();
     const cleanedTitle = normalizeSpaces(title);
     const cleanedAuthor = normalizeSpaces(author);
-    const cleanedDescription = description.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
-    const meta = metaSchema.safeParse({ title: cleanedTitle, author: cleanedAuthor, description: cleanedDescription, category });
+    const meta = metaSchema.safeParse({ title: cleanedTitle, author: cleanedAuthor, category });
     if (!meta.success) return toast.error(meta.error.issues[0].message);
     if (!pdf) return toast.error("PDF é obrigatório.");
 
@@ -257,21 +253,21 @@ function UploadPage() {
       const { error: insErr } = await supabase.from("tracks").insert({
         title: meta.data.title,
         author: meta.data.author || null,
-        description: meta.data.description || null,
         category: meta.data.category,
         pdf_path: pdfPath,
         audio_path: audioPath,
         image_paths: imagePaths,
         uploaded_by: user.id,
-        status: "approved",
+        status: "pending",
       });
       if (insErr) throw insErr;
 
-      toast.success("Conteúdo publicado!");
-      setTitle(""); setAuthor(""); setDescription(""); setCategory("");
+      toast.success("Música enviada!", {
+        description: "O envio ficou em análise. Será notificado quando for publicado.",
+      });
+      setTitle(""); setAuthor(""); setCategory("");
       setPdf(null); setAudio(null); setImages([]);
-      loadMySubmissions();
-      if (isAdmin) navigate({ to: "/library" });
+      navigate({ to: "/my-submissions" });
     } catch (err: any) {
       toast.error(err.message ?? "Erro no envio");
     } finally {
@@ -306,23 +302,23 @@ function UploadPage() {
       <Header />
       <div className="container mx-auto px-4 py-10 max-w-2xl">
         <Card className="border-2 border-primary/40 shadow-[var(--shadow-elegant)]">
-          <CardHeader><CardTitle>Enviar novo conteúdo</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Enviar nova música</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={submit} className="space-y-5">
               <div>
-                <Label className="font-semibold text-foreground">Título *</Label>
+                <Label className="font-semibold text-foreground">Título da música *</Label>
                 <Input required value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className="border-2 border-primary/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 bg-background" />
               </div>
 
               <div className="relative">
-                <Label className="font-semibold text-foreground">Autor do hino</Label>
+                <Label className="font-semibold text-foreground">Arranjado pelo:</Label>
                 <Input
                   value={author}
                   onChange={(e) => { setAuthor(e.target.value); setShowAuthorList(true); }}
                   onFocus={() => setShowAuthorList(true)}
                   onBlur={() => setTimeout(() => setShowAuthorList(false), 150)}
                   maxLength={150}
-                  placeholder="Nome do autor (opcional)"
+                  placeholder="Nome de quem arranjou (opcional)"
                   autoComplete="off"
                   className="border-2 border-primary/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 bg-background"
                 />
@@ -341,12 +337,7 @@ function UploadPage() {
                     ))}
                   </ul>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">Sugestões com base em autores já cadastrados.</p>
-              </div>
-
-              <div>
-                <Label className="font-semibold text-foreground">Descrição</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} className="border-2 border-primary/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 bg-background" />
+                <p className="mt-1 text-xs text-muted-foreground">Sugestões com base em nomes já cadastrados.</p>
               </div>
 
               <div>
@@ -377,12 +368,12 @@ function UploadPage() {
               </div>
 
               <div>
-                <Label className="font-semibold text-foreground">PDF * <span className="text-xs text-muted-foreground font-normal">(máx. 25 MB)</span></Label>
+                <Label className="font-semibold text-foreground">PDF * <span className="text-xs text-muted-foreground font-normal">(máx. 10 MB)</span></Label>
                 <Input type="file" accept="application/pdf" required onChange={(e) => onPickPdf(e.target.files?.[0] ?? null)} className="border-2 border-primary/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 bg-background" />
               </div>
 
               <div>
-                <Label className="font-semibold text-foreground">Áudio (MP3) — opcional <span className="text-xs text-muted-foreground font-normal">(máx. 30 MB)</span></Label>
+                <Label className="font-semibold text-foreground">Áudio (MP3) — opcional <span className="text-xs text-muted-foreground font-normal">(máx. 10 MB)</span></Label>
                 <Input type="file" accept="audio/mpeg,audio/mp3,.mp3" onChange={(e) => onPickAudio(e.target.files?.[0] ?? null)} className="border-2 border-primary/30 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 bg-background" />
               </div>
 
@@ -409,17 +400,11 @@ function UploadPage() {
                     </div>
                     {author && (
                       <div className="rounded-lg bg-background p-3 border border-border/60 sm:col-span-2">
-                        <p className="text-xs text-muted-foreground">Autor</p>
+                        <p className="text-xs text-muted-foreground">Arranjado pelo</p>
                         <p className="font-medium truncate">{author}</p>
                       </div>
                     )}
                   </div>
-                  {description && (
-                    <div className="rounded-lg bg-background p-3 border border-border/60 text-sm">
-                      <p className="text-xs text-muted-foreground mb-1">Descrição</p>
-                      <p className="whitespace-pre-wrap">{description}</p>
-                    </div>
-                  )}
                   {pdf && pdfPreview && (
                     <div className="rounded-lg bg-background border border-border/60 overflow-hidden">
                       <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 text-sm">
@@ -452,103 +437,21 @@ function UploadPage() {
               )}
 
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? "A enviar..." : "Enviar conteúdo"}
+                {submitting ? "A enviar..." : "Enviar música"}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <Card className="mt-6">
-          <CardHeader><CardTitle>Os meus envios</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            {mySubmissions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ainda não enviou nenhum conteúdo.</p>
-            ) : (
-              mySubmissions.map((s) => (
-                <div key={s.id} className="rounded-lg border border-border/60 p-3 space-y-2">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{s.title}</p>
-                      <p className="text-xs text-muted-foreground">{new Date(s.created_at).toLocaleString("pt-PT")}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {s.status === "approved" ? (
-                        <Badge>Aprovado</Badge>
-                      ) : s.status === "rejected" ? (
-                        <Badge variant="destructive">Rejeitado</Badge>
-                      ) : (
-                        <Badge variant="secondary">Pendente</Badge>
-                      )}
-                      <Button asChild size="sm" variant="outline">
-                        <Link to="/track/$id" params={{ id: s.id }}>
-                          <Eye className="h-3.5 w-3.5 mr-1" />Ver
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" variant="outline">
-                        <Link to="/track/$id/edit" params={{ id: s.id }}>
-                          <Pencil className="h-3.5 w-3.5 mr-1" />Editar
-                        </Link>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={async () => {
-                          if (!confirm(`Eliminar "${s.title}"? Esta ação remove o PDF, áudio e imagens associados.`)) return;
-                          try {
-                            await deleteTrackAndAssets({
-                              id: s.id,
-                              pdf_path: s.pdf_path,
-                              audio_path: s.audio_path,
-                              image_paths: s.image_paths,
-                            });
-                            toast.success("Conteúdo eliminado.");
-                            loadMySubmissions();
-                          } catch (err: any) {
-                            toast.error(err.message ?? "Erro ao eliminar.");
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-
-                    </div>
-                  </div>
-                  {s.status === "rejected" && (
-                    <div className="rounded-md bg-destructive/10 border border-destructive/30 p-2 text-xs space-y-2">
-                      <div className="flex gap-2">
-                        <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
-                        <div>
-                          <p className="font-medium text-destructive">Motivo da rejeição</p>
-                          <p className="text-foreground/80 mt-0.5">{s.rejection_reason || "O administrador não deixou nenhuma mensagem."}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 pl-6">
-                        <Button asChild size="sm" variant="outline">
-                          <Link to="/track/$id/edit" params={{ id: s.id }}>
-                            <Pencil className="h-3.5 w-3.5 mr-1" />Corrigir e reenviar
-                          </Link>
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            const { error } = await supabase
-                              .from("tracks")
-                              .update({ status: "pending", rejection_reason: null })
-                              .eq("id", s.id);
-                            if (error) return toast.error(error.message);
-                            toast.success("Reenviado para revisão.");
-                            loadMySubmissions();
-                          }}
-                        >
-                          Reenviar como está
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
+          <CardContent className="py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+              <p className="font-medium">Os meus envios</p>
+              <p className="text-sm text-muted-foreground">Veja o estado de cada música que enviou.</p>
+            </div>
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link to="/my-submissions">Abrir “Minhas submissões”</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
