@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -23,6 +24,11 @@ import { Route as TrackIdEditRouteImport } from './routes/track.$id.edit'
 const UploadRoute = UploadRouteImport.update({
   id: '/upload',
   path: '/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
   '/track/$id': typeof TrackIdRouteWithChildren
@@ -90,6 +97,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
   '/track/$id': typeof TrackIdRouteWithChildren
@@ -103,6 +111,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
   '/track/$id': typeof TrackIdRouteWithChildren
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/home'
     | '/library'
+    | '/reset-password'
     | '/upload'
     | '/author/$name'
     | '/track/$id'
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/home'
     | '/library'
+    | '/reset-password'
     | '/upload'
     | '/author/$name'
     | '/track/$id'
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/home'
     | '/library'
+    | '/reset-password'
     | '/upload'
     | '/author/$name'
     | '/track/$id'
@@ -154,6 +166,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   UploadRoute: typeof UploadRoute
   AuthorNameRoute: typeof AuthorNameRoute
   TrackIdRoute: typeof TrackIdRouteWithChildren
@@ -166,6 +179,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library': {
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   UploadRoute: UploadRoute,
   AuthorNameRoute: AuthorNameRoute,
   TrackIdRoute: TrackIdRouteWithChildren,
