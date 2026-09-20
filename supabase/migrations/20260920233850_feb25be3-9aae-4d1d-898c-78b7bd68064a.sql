@@ -1,0 +1,11 @@
+REVOKE ALL ON FUNCTION public.notify_track_status_change() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.log_track_changes() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.log_admin_action(text, text, text, text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.log_admin_action(text, text, text, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.increment_track_view(uuid) FROM anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.increment_track_view(uuid) TO anon, authenticated;
+REVOKE ALL ON FUNCTION public.increment_track_download(uuid) FROM anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.increment_track_download(uuid) TO anon, authenticated;
+REVOKE ALL ON FUNCTION public.increment_track_play(uuid) FROM anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.increment_track_play(uuid) TO anon, authenticated;
