@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as LibraryRouteImport } from './routes/library'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -24,9 +26,19 @@ const UploadRoute = UploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LibraryRoute = LibraryRouteImport.update({
   id: '/library',
   path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -70,7 +82,9 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
   '/track/$id': typeof TrackIdRouteWithChildren
@@ -81,7 +95,9 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
   '/track/$id': typeof TrackIdRouteWithChildren
@@ -93,7 +109,9 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
   '/track/$id': typeof TrackIdRouteWithChildren
@@ -106,7 +124,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/home'
     | '/library'
+    | '/reset-password'
     | '/upload'
     | '/author/$name'
     | '/track/$id'
@@ -117,7 +137,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/home'
     | '/library'
+    | '/reset-password'
     | '/upload'
     | '/author/$name'
     | '/track/$id'
@@ -128,7 +150,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/home'
     | '/library'
+    | '/reset-password'
     | '/upload'
     | '/author/$name'
     | '/track/$id'
@@ -140,7 +164,9 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
+  HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   UploadRoute: typeof UploadRoute
   AuthorNameRoute: typeof AuthorNameRoute
   TrackIdRoute: typeof TrackIdRouteWithChildren
@@ -155,11 +181,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/library': {
       id: '/library'
       path: '/library'
       fullPath: '/library'
       preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -230,7 +270,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
+  HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   UploadRoute: UploadRoute,
   AuthorNameRoute: AuthorNameRoute,
   TrackIdRoute: TrackIdRouteWithChildren,
