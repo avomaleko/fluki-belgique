@@ -1,38 +1,39 @@
 # Roadmap — Evolução FLAUKI
 
 ## 1. Base de dados / segurança
-- [ ] tracks: status default pending, estado needs_fix
-- [ ] favorites, notifications, admin_audit_log (RLS + grants)
-- [ ] contact_messages: coluna status
-- [ ] rever políticas storage
+- [x] tracks: status default pending, estado needs_fix
+- [x] favorites, notifications, admin_audit_log (RLS + grants)
+- [x] contact_messages: coluna status
+- [x] rever políticas storage
 
 ## 2. Rotas e navegação
-- [ ] / -> /library (Página Inicial em /home)
-- [ ] login/registo -> /library (com redirect param)
-- [ ] recuperação de palavra-passe (/auth + /reset-password)
-- [ ] menu: Biblioteca, Início, Perfil, Submissões, Favoritos, Enviar, Admin
+- [x] / -> /library (Página Inicial em /home)
+- [x] login/registo -> /library (com redirect param)
+- [x] recuperação de palavra-passe (/auth + /reset-password)
+- [x] menu: Biblioteca, Início, Perfil, Submissões, Favoritos, Enviar, Admin
 
 ## 3. Envio
-- [ ] "Enviar nova música", "Título da música", "Arranjado pelo:", sem descrição
-- [ ] PDF 10MB obrigatório, MP3 10MB opcional
-- [ ] submissão fica pendente
+- [x] "Enviar nova música", "Título da música", "Arranjado pelo:", sem descrição
+- [x] PDF 10MB obrigatório, MP3 10MB opcional
+- [x] submissão fica pendente
 
 ## 4. Biblioteca e música
-- [ ] pesquisa por título/arranjado/autor + filtros (recentes, com áudio)
-- [ ] página de detalhe
-- [ ] leitor de áudio próprio
-- [ ] favoritos
+- [x] pesquisa por título/arranjado/autor + filtros (recentes, com áudio)
+- [x] página de detalhe
+- [x] leitor de áudio próprio
+- [x] favoritos
 
 ## 5. Área do utilizador
-- [ ] perfil (nome, palavra-passe)
-- [ ] minhas submissões com estados e correção
-- [ ] notificações in-app
+- [x] perfil (nome, palavra-passe)
+- [x] minhas submissões com estados e correção
+- [x] notificações in-app
 
 ## 6. Administração
-- [ ] secções separadas + paginação
-- [ ] mensagens com estados, seleção e eliminação múltipla
-- [ ] auditoria de ações
+- [x] secções separadas + paginação
+- [x] mensagens com estados, seleção e eliminação múltipla
+- [x] auditoria de ações
 
 ## 7. Final
-- [ ] mobile-first
-- [ ] typecheck/build + teste dos fluxos
+- [x] mobile-first (testado a 390px)
+- [ ] aviso de marcação `<div>` dentro de `<p>` nos separadores (gera erro de hidratação na consola)
+- [ ] typecheck/build finais depois das últimas alterações
