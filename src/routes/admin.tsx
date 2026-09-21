@@ -130,7 +130,13 @@ function AdminPage() {
     const { data: msgs } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
     const { data: tks } = await supabase.from("tracks").select("*").eq("status", "pending").order("created_at", { ascending: false });
     const { data: allTks } = await supabase.from("tracks").select("*").order("created_at", { ascending: false }).limit(500);
+    const { data: logs } = await supabase
+      .from("admin_audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(300);
     setAllTracks((allTks ?? []) as AdminTrack[]);
+    setAudit((logs ?? []) as AuditEntry[]);
 
     setProfiles((profs ?? []) as Profile[]);
     const map: Record<string, string[]> = {};
@@ -138,7 +144,9 @@ function AdminPage() {
       map[r.user_id] = [...(map[r.user_id] ?? []), r.role];
     });
     setRolesByUser(map);
-    setMessages((msgs ?? []) as ContactMsg[]);
+    const msgRows = (msgs ?? []) as ContactMsg[];
+    setMessages(msgRows);
+    setCheckedIds((prev) => prev.filter((id) => msgRows.some((m) => m.id === id)));
     setPendingTracks((tks ?? []) as PendingTrack[]);
   };
 
