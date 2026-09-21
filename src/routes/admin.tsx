@@ -183,6 +183,22 @@ function AdminPage() {
     );
   }
 
+  const logAdmin = (action: string, entity: string, entityId: string, details: string) => {
+    // fire-and-forget: o registo de atividade nunca bloqueia a ação do administrador
+    supabase.rpc("log_admin_action", {
+      _action: action,
+      _entity: entity,
+      _entity_id: entityId,
+      _details: details.slice(0, 500),
+    });
+  };
+  const userLabel = (userId: string) => {
+    const p = profiles.find((x) => x.id === userId);
+    return p?.display_name || p?.email || userId.slice(0, 8);
+  };
+  const trackLabel = (id: string) =>
+    pendingTracks.find((t) => t.id === id)?.title ?? allTracks.find((t) => t.id === id)?.title ?? id.slice(0, 8);
+
   const grantUploader = async (userId: string) => {
     setBusy(true);
     const { error: e1 } = await supabase.from("user_roles").insert({ user_id: userId, role: "uploader" });
@@ -191,6 +207,7 @@ function AdminPage() {
     setBusy(false);
     if (e2) return toast.error(e2.message);
     toast.success("Permissão concedida.");
+    logAdmin("conceder_envio", "utilizador", userId, `Permissão de envio concedida a ${userLabel(userId)}`);
     load();
   };
   const rejectRequest = async (userId: string) => {
@@ -199,6 +216,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Pedido rejeitado.");
+    logAdmin("rejeitar_pedido", "utilizador", userId, `Pedido de envio rejeitado de ${userLabel(userId)}`);
     load();
   };
   const revoke = async (userId: string) => {
@@ -208,6 +226,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Permissão removida.");
+    logAdmin("revogar_envio", "utilizador", userId, `Permissão de envio removida de ${userLabel(userId)}`);
     load();
   };
 
@@ -218,6 +237,7 @@ function AdminPage() {
     });
     if (error) return toast.error(error.message);
     toast.success(`Email de recuperação enviado para ${email}.`);
+    logAdmin("reset_palavra_passe", "utilizador", email, `Email de recuperação enviado para ${email}`);
   };
 
   const deleteUser = async () => {
@@ -234,6 +254,7 @@ function AdminPage() {
     setBusy(false);
     if (pErr) return toast.error(`Perfil eliminado parcialmente: ${pErr.message}`);
     toast.success("Utilizador removido do sistema. (A conta de autenticação só pode ser apagada via Backend.)");
+    logAdmin("eliminar_utilizador", "utilizador", deleteUserTarget.id, `Perfil e permissões removidos de ${deleteUserTarget.display_name || deleteUserTarget.email}`);
     setDeleteUserTarget(null);
     load();
   };
@@ -247,6 +268,8 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Mensagem eliminada.");
+    const m = messages.find((x) => x.id === id);
+    logAdmin("eliminar_mensagem", "mensagem", id, `Mensagem de ${m?.name ?? "desconhecido"} eliminada`);
     load();
   };
   const toggleRead = async (m: ContactMsg) => {
@@ -254,6 +277,42 @@ function AdminPage() {
     const { error } = await supabase.from("contact_messages").update({ is_read: !m.is_read }).eq("id", m.id);
     setBusy(false);
     if (error) return toast.error(error.message);
+    load();
+  };
+  const setMsgStatus = async (m: ContactMsg, status: string) => {
+    if ((m.status ?? "new") === status) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("contact_messages")
+      .update({ status, is_read: status === "answered" ? true : m.is_read })
+      .eq("id", m.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Mensagem marcada como ${msgStatusLabel(status).toLowerCase()}.`);
+    logAdmin("alterar_estado_mensagem", "mensagem", m.id, `Mensagem de ${m.name}: ${msgStatusLabel(m.status)} → ${msgStatusLabel(status)}`);
+    setSelected((prev) => (prev && prev.id === m.id ? { ...prev, status, is_read: status === "answered" ? true : prev.is_read } : prev));
+    load();
+  };
+  const toggleCheck = (id: string) =>
+    setCheckedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggleCheckAll = () =>
+    setCheckedIds((prev) => {
+      const pageIds = pageMessages.map((m) => m.id);
+      const allChecked = pageIds.length > 0 && pageIds.every((id) => prev.includes(id));
+      return allChecked
+        ? prev.filter((id) => !pageIds.includes(id))
+        : Array.from(new Set([...prev, ...pageIds]));
+    });
+  const deleteSelected = async () => {
+    if (checkedIds.length === 0) return;
+    if (!confirm(`Eliminar definitivamente ${checkedIds.length} mensagem(ns)?`)) return;
+    setBusy(true);
+    const { error } = await supabase.from("contact_messages").delete().in("id", checkedIds);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${checkedIds.length} mensagem(ns) eliminada(s).`);
+    logAdmin("eliminar_mensagens", "mensagem", `${checkedIds.length}`, `Eliminação em massa de ${checkedIds.length} mensagem(ns)`);
+    setCheckedIds([]);
     load();
   };
   const openDetails = async (m: ContactMsg) => {
