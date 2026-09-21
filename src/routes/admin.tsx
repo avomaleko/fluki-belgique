@@ -413,7 +413,12 @@ function AdminPage() {
   };
 
   // Sorted/paginated views
-  const sortedMessages = [...messages].sort((a, b) => {
+  const statusCount = (s: string) => messages.filter((m) => (m.status ?? "new") === s).length;
+  const filteredMessages = useMemo(
+    () => (msgFilter === "all" ? messages : messages.filter((m) => (m.status ?? "new") === msgFilter)),
+    [messages, msgFilter]
+  );
+  const sortedMessages = [...filteredMessages].sort((a, b) => {
     const da = new Date(a.created_at).getTime();
     const db = new Date(b.created_at).getTime();
     return sortDesc ? db - da : da - db;
@@ -422,6 +427,17 @@ function AdminPage() {
   const curMsgPage = Math.min(msgPage, totalMsgPages);
   const pageMessages = sortedMessages.slice((curMsgPage - 1) * PAGE_SIZE, curMsgPage * PAGE_SIZE);
   const unreadCount = messages.filter((m) => !m.is_read).length;
+
+  const filteredAudit = useMemo(() => {
+    const q = auditQuery.trim().toLowerCase();
+    if (!q) return audit;
+    return audit.filter((a) =>
+      [a.actor_name, a.action, a.entity, a.entity_id, a.details].some((v) => (v ?? "").toLowerCase().includes(q))
+    );
+  }, [audit, auditQuery]);
+  const totalAuditPages = Math.max(1, Math.ceil(filteredAudit.length / PAGE_SIZE));
+  const curAuditPage = Math.min(auditPage, totalAuditPages);
+  const pageAudit = filteredAudit.slice((curAuditPage - 1) * PAGE_SIZE, curAuditPage * PAGE_SIZE);
 
   const filteredUsers = useMemo(() => {
     const q = usersQuery.trim().toLowerCase();
