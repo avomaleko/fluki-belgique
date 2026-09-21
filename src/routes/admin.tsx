@@ -68,6 +68,8 @@ const MSG_STATUSES: { value: string; label: string }[] = [
 ];
 const msgStatusLabel = (s: string | null | undefined) =>
   MSG_STATUSES.find((x) => x.value === (s ?? "new"))?.label ?? "Nova";
+const msgStatusVariant = (s: string | null | undefined): "default" | "secondary" | "outline" =>
+  (s ?? "new") === "new" ? "default" : (s ?? "new") === "in_review" ? "secondary" : "outline";
 
 function initialsOf(name: string) {
   const parts = (name || "U").trim().split(/\s+/);
@@ -697,14 +699,54 @@ function AdminPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" />Mensagens ({messages.length}){unreadCount > 0 && <Badge>{unreadCount} novas</Badge>}</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" />Mensagens ({filteredMessages.length}){unreadCount > 0 && <Badge>{unreadCount} por ler</Badge>}</CardTitle>
                   <Button size="sm" variant="outline" onClick={() => { setSortDesc((v) => !v); setMsgPage(1); }}>
                     <ArrowUpDown className="h-4 w-4 mr-1" />{sortDesc ? "Mais recentes" : "Mais antigas"}
                   </Button>
                 </div>
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <Button size="sm" variant={msgFilter === "all" ? "default" : "outline"} className="h-7 px-2.5 text-xs" onClick={() => { setMsgFilter("all"); setMsgPage(1); }}>
+                    Todas ({messages.length})
+                  </Button>
+                  {MSG_STATUSES.map((s) => (
+                    <Button
+                      key={s.value}
+                      size="sm"
+                      variant={msgFilter === s.value ? "default" : "outline"}
+                      className="h-7 px-2.5 text-xs"
+                      onClick={() => { setMsgFilter(s.value); setMsgPage(1); }}
+                    >
+                      {s.label} ({statusCount(s.value)})
+                    </Button>
+                  ))}
+                </div>
+                {checkedIds.length > 0 && (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+                    <p className="text-sm font-medium">{checkedIds.length} selecionada(s)</p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setCheckedIds([])}>Limpar</Button>
+                      <Button size="sm" variant="destructive" disabled={busy} onClick={deleteSelected}>
+                        <Trash2 className="h-4 w-4 mr-1" />Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
-                {messages.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Sem mensagens.</p>}
+                {filteredMessages.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-6 text-center">
+                    {messages.length === 0 ? "Sem mensagens." : "Nenhuma mensagem neste estado."}
+                  </p>
+                )}
+                {pageMessages.length > 0 && (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <Checkbox
+                      checked={pageMessages.every((m) => checkedIds.includes(m.id))}
+                      onCheckedChange={() => toggleCheckAll()}
+                    />
+                    Selecionar desta página
+                  </label>
+                )}
                 {pageMessages.map((m) => (
                   <div
                     key={m.id}
@@ -712,28 +754,36 @@ function AdminPage() {
                     tabIndex={0}
                     onClick={() => openDetails(m)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetails(m); } }}
-                    className={`rounded-lg border p-3 space-y-2 cursor-pointer transition-colors hover:bg-muted/40 ${m.is_read ? "border-border bg-background" : "border-primary/40 bg-primary/5"}`}
+                    className={`rounded-lg border p-3 cursor-pointer transition-colors hover:bg-muted/40 ${m.is_read ? "border-border bg-background" : "border-primary/40 bg-primary/5"}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                    <div className="flex items-start gap-2">
+                      <div className="pt-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={checkedIds.includes(m.id)}
+                          onCheckedChange={() => toggleCheck(m.id)}
+                          aria-label={`Selecionar mensagem de ${m.name}`}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{m.name}</p>
-                          {!m.is_read && <Badge>Nova</Badge>}
+                          <Badge variant={msgStatusVariant(m.status)}>{msgStatusLabel(m.status)}</Badge>
+                          {!m.is_read && <Badge variant="outline" className="text-[10px]">Por ler</Badge>}
                         </div>
                         {m.email && m.email !== "—" && <p className="text-xs text-muted-foreground break-all">{m.email}</p>}
                         <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("pt-PT")}</p>
+                        {m.subject && <p className="text-sm font-medium">{m.subject}</p>}
+                        <p className="text-sm whitespace-pre-wrap line-clamp-3">{m.message}</p>
                       </div>
                       <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleRead(m)}>
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleRead(m)} title="Marcar como lida / não lida">
                           {m.is_read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}
                         </Button>
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => deleteMessage(m.id)}>
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => deleteMessage(m.id)} title="Eliminar mensagem">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    {m.subject && <p className="text-sm font-medium">{m.subject}</p>}
-                    <p className="text-sm whitespace-pre-wrap line-clamp-3">{m.message}</p>
                   </div>
                 ))}
                 <Pager page={curMsgPage} totalPages={totalMsgPages} onChange={setMsgPage} />
@@ -766,6 +816,56 @@ function AdminPage() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* REGISTO DE ATIVIDADE */}
+          <TabsContent value="activity">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <CardTitle className="flex items-center gap-2"><History className="h-5 w-5" />Registo de atividade ({filteredAudit.length})</CardTitle>
+                  <Input
+                    placeholder="Pesquisar por ação, pessoa ou detalhe..."
+                    value={auditQuery}
+                    onChange={(e) => { setAuditQuery(e.target.value); setAuditPage(1); }}
+                    className="w-full sm:w-80"
+                    maxLength={100}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground pt-1">
+                  Cada ação do administrador fica registada com quem fez e quando.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {filteredAudit.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-6 text-center">
+                    {auditQuery ? "Nada encontrado para esta pesquisa." : "Ainda não há ações registadas."}
+                  </p>
+                )}
+                {pageAudit.map((a) => (
+                  <div key={a.id} className="rounded-lg border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="text-xs">{a.action}</Badge>
+                          <span className="text-xs text-muted-foreground">{a.entity}</span>
+                        </p>
+                        {a.details && <p className="mt-1 text-sm">{a.details}</p>}
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {a.actor_name ?? "Sistema"} · {new Date(a.created_at).toLocaleString("pt-PT")}
+                        </p>
+                      </div>
+                      {a.entity_id && (
+                        <p className="text-[10px] font-mono text-muted-foreground shrink-0 max-w-[110px] truncate" title={a.entity_id}>
+                          {a.entity_id}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <Pager page={curAuditPage} totalPages={totalAuditPages} onChange={setAuditPage} />
               </CardContent>
             </Card>
           </TabsContent>
