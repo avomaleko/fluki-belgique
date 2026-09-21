@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, Download, ExternalLink, FileText, Loader2, Smartphone, Maximize2, Minimize2 } from "lucide-react";
 import { getSignedUrl, getSignedUrls } from "@/lib/storage";
 import { supabase } from "@/integrations/supabase/client";
+import { AudioPlayer } from "@/components/app/AudioPlayer";
 
 type Props = {
   pdfPath: string;
@@ -135,14 +136,12 @@ export function MediaViewer({ pdfPath, audioPath, imagePaths, title, allowDownlo
                 )}
               </div>
             </div>
-            <audio
-              controls
-              preload="metadata"
-              controlsList={allowDownload ? undefined : "nodownload"}
-              className="w-full"
-              src={audioUrl}
-              onPlay={onPlay}
-            />
+            <AudioPlayer src={audioUrl} title={title} onPlay={onPlay} />
+            {!allowDownload && (
+              <p className="text-[11px] text-muted-foreground">
+                O autor permitiu apenas a audição e a visualização deste conteúdo.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}
