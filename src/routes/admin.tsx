@@ -12,11 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Check, X, Shield, Mail, Trash2, MailOpen, ArrowUpDown, ChevronLeft, ChevronRight, FileText, Eye, Music as MusicIcon, Tag, Plus, Pencil, Users, KeyRound, Inbox, ListChecks, FileCheck2 } from "lucide-react";
+import { Check, X, Shield, Mail, Trash2, MailOpen, ArrowUpDown, ChevronLeft, ChevronRight, FileText, Eye, Music as MusicIcon, Tag, Plus, Pencil, Users, KeyRound, Inbox, ListChecks, FileCheck2, History, Wrench } from "lucide-react";
 import { getSignedUrl } from "@/lib/storage";
 import { deleteTrackAndAssets } from "@/lib/tracks";
 import { fetchCategories, useCategories } from "@/lib/categories";
+import { StatusBadge } from "@/components/app/StatusBadge";
 
 
 export const Route = createFileRoute("/admin")({
@@ -38,7 +40,8 @@ type Profile = {
   created_at?: string;
 };
 type RoleRow = { user_id: string; role: "admin" | "uploader" | "user" };
-type ContactMsg = { id: string; name: string; email: string | null; subject: string | null; message: string; created_at: string; is_read: boolean };
+type ContactMsg = { id: string; name: string; email: string | null; subject: string | null; message: string; created_at: string; is_read: boolean; status: string };
+type AuditEntry = { id: string; actor_id: string | null; actor_name: string | null; action: string; entity: string; entity_id: string | null; details: string | null; created_at: string };
 type PendingTrack = {
   id: string;
   title: string;
@@ -56,6 +59,17 @@ type AdminTrack = PendingTrack & { uploader_name?: string | null };
 
 
 const PAGE_SIZE = 25;
+
+const MSG_STATUSES: { value: string; label: string }[] = [
+  { value: "new", label: "Nova" },
+  { value: "in_review", label: "Em análise" },
+  { value: "answered", label: "Respondida" },
+  { value: "archived", label: "Arquivada" },
+];
+const msgStatusLabel = (s: string | null | undefined) =>
+  MSG_STATUSES.find((x) => x.value === (s ?? "new"))?.label ?? "Nova";
+const msgStatusVariant = (s: string | null | undefined): "default" | "secondary" | "outline" =>
+  (s ?? "new") === "new" ? "default" : (s ?? "new") === "in_review" ? "secondary" : "outline";
 
 function initialsOf(name: string) {
   const parts = (name || "U").trim().split(/\s+/);
@@ -90,6 +104,11 @@ function AdminPage() {
   const [tracksPage, setTracksPage] = useState(1);
   const [usersQuery, setUsersQuery] = useState("");
   const [selected, setSelected] = useState<ContactMsg | null>(null);
+  const [msgFilter, setMsgFilter] = useState<string>("all");
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditQuery, setAuditQuery] = useState("");
   const [pendingTracks, setPendingTracks] = useState<PendingTrack[]>([]);
   const [allTracks, setAllTracks] = useState<AdminTrack[]>([]);
   const [allTracksQuery, setAllTracksQuery] = useState("");
@@ -101,6 +120,7 @@ function AdminPage() {
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
   const [rejectTarget, setRejectTarget] = useState<{ id: string; title: string } | null>(null);
+  const [rejectMode, setRejectMode] = useState<"rejected" | "needs_fix">("rejected");
   const [rejectReason, setRejectReason] = useState("");
   const [deleteUserTarget, setDeleteUserTarget] = useState<Profile | null>(null);
   const { categories } = useCategories();
@@ -114,7 +134,13 @@ function AdminPage() {
     const { data: msgs } = await supabase.from("contact_messages").select("*").order("created_at", { ascending: false });
     const { data: tks } = await supabase.from("tracks").select("*").eq("status", "pending").order("created_at", { ascending: false });
     const { data: allTks } = await supabase.from("tracks").select("*").order("created_at", { ascending: false }).limit(500);
+    const { data: logs } = await supabase
+      .from("admin_audit_log")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(300);
     setAllTracks((allTks ?? []) as AdminTrack[]);
+    setAudit((logs ?? []) as AuditEntry[]);
 
     setProfiles((profs ?? []) as Profile[]);
     const map: Record<string, string[]> = {};
@@ -122,7 +148,9 @@ function AdminPage() {
       map[r.user_id] = [...(map[r.user_id] ?? []), r.role];
     });
     setRolesByUser(map);
-    setMessages((msgs ?? []) as ContactMsg[]);
+    const msgRows = (msgs ?? []) as ContactMsg[];
+    setMessages(msgRows);
+    setCheckedIds((prev) => prev.filter((id) => msgRows.some((m) => m.id === id)));
     setPendingTracks((tks ?? []) as PendingTrack[]);
   };
 
@@ -140,24 +168,22 @@ function AdminPage() {
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [isAdmin]);
 
-  if (loading) return <div className="min-h-screen bg-background"><Header /><p className="container mx-auto p-8">A carregar...</p></div>;
 
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto p-8 max-w-md">
-          <Card>
-            <CardContent className="py-10 text-center space-y-3">
-              <Shield className="h-10 w-10 mx-auto text-muted-foreground" />
-              <p>Acesso restrito a administradores.</p>
-              <Button asChild><Link to="/">Voltar</Link></Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
+  const logAdmin = (action: string, entity: string, entityId: string, details: string) => {
+    // fire-and-forget: o registo de atividade nunca bloqueia a ação do administrador
+    supabase.rpc("log_admin_action", {
+      _action: action,
+      _entity: entity,
+      _entity_id: entityId,
+      _details: details.slice(0, 500),
+    }).then(() => {}, () => {});
+  };
+  const userLabel = (userId: string) => {
+    const p = profiles.find((x) => x.id === userId);
+    return p?.display_name || p?.email || userId.slice(0, 8);
+  };
+  const trackLabel = (id: string) =>
+    pendingTracks.find((t) => t.id === id)?.title ?? allTracks.find((t) => t.id === id)?.title ?? id.slice(0, 8);
 
   const grantUploader = async (userId: string) => {
     setBusy(true);
@@ -167,6 +193,7 @@ function AdminPage() {
     setBusy(false);
     if (e2) return toast.error(e2.message);
     toast.success("Permissão concedida.");
+    logAdmin("conceder_envio", "utilizador", userId, `Permissão de envio concedida a ${userLabel(userId)}`);
     load();
   };
   const rejectRequest = async (userId: string) => {
@@ -175,6 +202,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Pedido rejeitado.");
+    logAdmin("rejeitar_pedido", "utilizador", userId, `Pedido de envio rejeitado de ${userLabel(userId)}`);
     load();
   };
   const revoke = async (userId: string) => {
@@ -184,6 +212,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Permissão removida.");
+    logAdmin("revogar_envio", "utilizador", userId, `Permissão de envio removida de ${userLabel(userId)}`);
     load();
   };
 
@@ -194,6 +223,7 @@ function AdminPage() {
     });
     if (error) return toast.error(error.message);
     toast.success(`Email de recuperação enviado para ${email}.`);
+    logAdmin("reset_palavra_passe", "utilizador", email, `Email de recuperação enviado para ${email}`);
   };
 
   const deleteUser = async () => {
@@ -210,6 +240,7 @@ function AdminPage() {
     setBusy(false);
     if (pErr) return toast.error(`Perfil eliminado parcialmente: ${pErr.message}`);
     toast.success("Utilizador removido do sistema. (A conta de autenticação só pode ser apagada via Backend.)");
+    logAdmin("eliminar_utilizador", "utilizador", deleteUserTarget.id, `Perfil e permissões removidos de ${deleteUserTarget.display_name || deleteUserTarget.email}`);
     setDeleteUserTarget(null);
     load();
   };
@@ -223,6 +254,8 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Mensagem eliminada.");
+    const m = messages.find((x) => x.id === id);
+    logAdmin("eliminar_mensagem", "mensagem", id, `Mensagem de ${m?.name ?? "desconhecido"} eliminada`);
     load();
   };
   const toggleRead = async (m: ContactMsg) => {
@@ -230,6 +263,42 @@ function AdminPage() {
     const { error } = await supabase.from("contact_messages").update({ is_read: !m.is_read }).eq("id", m.id);
     setBusy(false);
     if (error) return toast.error(error.message);
+    load();
+  };
+  const setMsgStatus = async (m: ContactMsg, status: string) => {
+    if ((m.status ?? "new") === status) return;
+    setBusy(true);
+    const { error } = await supabase
+      .from("contact_messages")
+      .update({ status, is_read: status === "answered" ? true : m.is_read })
+      .eq("id", m.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Mensagem marcada como ${msgStatusLabel(status).toLowerCase()}.`);
+    logAdmin("alterar_estado_mensagem", "mensagem", m.id, `Mensagem de ${m.name}: ${msgStatusLabel(m.status)} → ${msgStatusLabel(status)}`);
+    setSelected((prev) => (prev && prev.id === m.id ? { ...prev, status, is_read: status === "answered" ? true : prev.is_read } : prev));
+    load();
+  };
+  const toggleCheck = (id: string) =>
+    setCheckedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const toggleCheckAll = () =>
+    setCheckedIds((prev) => {
+      const pageIds = pageMessages.map((m) => m.id);
+      const allChecked = pageIds.length > 0 && pageIds.every((id) => prev.includes(id));
+      return allChecked
+        ? prev.filter((id) => !pageIds.includes(id))
+        : Array.from(new Set([...prev, ...pageIds]));
+    });
+  const deleteSelected = async () => {
+    if (checkedIds.length === 0) return;
+    if (!confirm(`Eliminar definitivamente ${checkedIds.length} mensagem(ns)?`)) return;
+    setBusy(true);
+    const { error } = await supabase.from("contact_messages").delete().in("id", checkedIds);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${checkedIds.length} mensagem(ns) eliminada(s).`);
+    logAdmin("eliminar_mensagens", "mensagem", `${checkedIds.length}`, `Eliminação em massa de ${checkedIds.length} mensagem(ns)`);
+    setCheckedIds([]);
     load();
   };
   const openDetails = async (m: ContactMsg) => {
@@ -242,23 +311,35 @@ function AdminPage() {
 
   const approveTrack = async (id: string) => {
     setBusy(true);
-    const { error } = await supabase.from("tracks").update({ status: "approved" }).eq("id", id);
+    const { error } = await supabase.from("tracks").update({ status: "approved", rejection_reason: null }).eq("id", id);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Conteúdo aprovado.");
+    logAdmin("aprovar", "música", id, `Música aprovada e publicada: ${trackLabel(id)}`);
     load();
   };
-  const openRejectDialog = (id: string, title: string) => { setRejectTarget({ id, title }); setRejectReason(""); };
+  const openRejectDialog = (id: string, title: string, mode: "rejected" | "needs_fix" = "rejected") => {
+    setRejectMode(mode);
+    setRejectTarget({ id, title });
+    setRejectReason("");
+  };
   const confirmRejectTrack = async () => {
     if (!rejectTarget) return;
     const reason = rejectReason.trim();
     if (reason.length < 3) return toast.error("Indique um motivo (mín. 3 caracteres).");
     if (reason.length > 500) return toast.error("Motivo muito longo.");
+    const status = rejectMode;
     setBusy(true);
-    const { error } = await supabase.from("tracks").update({ status: "rejected", rejection_reason: reason }).eq("id", rejectTarget.id);
+    const { error } = await supabase.from("tracks").update({ status, rejection_reason: reason }).eq("id", rejectTarget.id);
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Rejeitado.");
+    toast.success(status === "needs_fix" ? "Correção pedida ao autor." : "Rejeitado.");
+    logAdmin(
+      status === "needs_fix" ? "pedir_correção" : "rejeitar",
+      "música",
+      rejectTarget.id,
+      `${status === "needs_fix" ? "Correção pedida" : "Rejeição"} de ${rejectTarget.title}: ${reason}`,
+    );
     setRejectTarget(null); setRejectReason(""); setPreviewTrack(null);
     load();
   };
@@ -276,6 +357,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Categoria criada.");
+    logAdmin("criar_categoria", "categoria", value, `Categoria criada: ${label}`);
     setNewCatLabel(""); fetchCategories(true);
   };
   const renameCategory = async () => {
@@ -287,6 +369,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Renomeada.");
+    logAdmin("renomear_categoria", "categoria", editCat.value, `Categoria renomeada: ${editCat.label} → ${label}`);
     setEditCat(null); fetchCategories(true);
   };
   const deleteCategory = async (value: string, label: string) => {
@@ -298,6 +381,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Eliminada.");
+    logAdmin("eliminar_categoria", "categoria", value, `Categoria eliminada: ${label}`);
     fetchCategories(true);
   };
 
@@ -314,7 +398,12 @@ function AdminPage() {
   };
 
   // Sorted/paginated views
-  const sortedMessages = [...messages].sort((a, b) => {
+  const statusCount = (s: string) => messages.filter((m) => (m.status ?? "new") === s).length;
+  const filteredMessages = useMemo(
+    () => (msgFilter === "all" ? messages : messages.filter((m) => (m.status ?? "new") === msgFilter)),
+    [messages, msgFilter]
+  );
+  const sortedMessages = [...filteredMessages].sort((a, b) => {
     const da = new Date(a.created_at).getTime();
     const db = new Date(b.created_at).getTime();
     return sortDesc ? db - da : da - db;
@@ -323,6 +412,17 @@ function AdminPage() {
   const curMsgPage = Math.min(msgPage, totalMsgPages);
   const pageMessages = sortedMessages.slice((curMsgPage - 1) * PAGE_SIZE, curMsgPage * PAGE_SIZE);
   const unreadCount = messages.filter((m) => !m.is_read).length;
+
+  const filteredAudit = useMemo(() => {
+    const q = auditQuery.trim().toLowerCase();
+    if (!q) return audit;
+    return audit.filter((a) =>
+      [a.actor_name, a.action, a.entity, a.entity_id, a.details].some((v) => (v ?? "").toLowerCase().includes(q))
+    );
+  }, [audit, auditQuery]);
+  const totalAuditPages = Math.max(1, Math.ceil(filteredAudit.length / PAGE_SIZE));
+  const curAuditPage = Math.min(auditPage, totalAuditPages);
+  const pageAudit = filteredAudit.slice((curAuditPage - 1) * PAGE_SIZE, curAuditPage * PAGE_SIZE);
 
   const filteredUsers = useMemo(() => {
     const q = usersQuery.trim().toLowerCase();
@@ -342,6 +442,25 @@ function AdminPage() {
   const totalTracksPages = Math.max(1, Math.ceil(pendingTracks.length / PAGE_SIZE));
   const curTracksPage = Math.min(tracksPage, totalTracksPages);
   const pageTracks = pendingTracks.slice((curTracksPage - 1) * PAGE_SIZE, curTracksPage * PAGE_SIZE);
+
+  if (loading) return <div className="min-h-screen bg-background"><Header /><p className="container mx-auto p-8">A carregar...</p></div>;
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto p-8 max-w-md">
+          <Card>
+            <CardContent className="py-10 text-center space-y-3">
+              <Shield className="h-10 w-10 mx-auto text-muted-foreground" />
+              <p>Acesso restrito a administradores.</p>
+              <Button asChild><Link to="/">Voltar</Link></Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -367,6 +486,7 @@ function AdminPage() {
             <TabsTrigger value="users" className="gap-1.5"><Users className="h-4 w-4" />Utilizadores</TabsTrigger>
             <TabsTrigger value="messages" className="gap-1.5"><Mail className="h-4 w-4" />Mensagens {unreadCount > 0 && <Badge variant="default" className="h-5 ml-1">{unreadCount}</Badge>}</TabsTrigger>
             <TabsTrigger value="categories" className="gap-1.5"><Tag className="h-4 w-4" />Categorias</TabsTrigger>
+            <TabsTrigger value="activity" className="gap-1.5"><History className="h-4 w-4" />Atividade</TabsTrigger>
           </TabsList>
 
           {/* TODOS OS CONTEÚDOS */}
@@ -407,7 +527,7 @@ function AdminPage() {
                             <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground items-center">
                               {t.author && <span>por {t.author}</span>}
                               <Badge variant="secondary" className="text-xs">{t.category}</Badge>
-                              <Badge variant={t.status === "approved" ? "default" : t.status === "rejected" ? "destructive" : "outline"} className="text-xs">{t.status}</Badge>
+                              <StatusBadge status={t.status} className="text-xs" />
                               <span>· {new Date(t.created_at).toLocaleDateString("pt-PT")}</span>
                             </div>
                             <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
@@ -430,11 +550,12 @@ function AdminPage() {
                               onClick={async () => {
                                 if (!confirm(`Eliminar "${t.title}"? Remove PDF, áudio e imagens.`)) return;
                                 setBusy(true);
-                                try {
-                                  await deleteTrackAndAssets({ id: t.id, pdf_path: t.pdf_path, audio_path: t.audio_path, image_paths: t.image_paths });
-                                  toast.success("Conteúdo eliminado.");
-                                  load();
-                                } catch (err: any) {
+                                 try {
+                                   await deleteTrackAndAssets({ id: t.id, pdf_path: t.pdf_path, audio_path: t.audio_path, image_paths: t.image_paths });
+                                   toast.success("Conteúdo eliminado.");
+                                   logAdmin("eliminar_musica", "música", t.id, `Conteúdo eliminado: ${t.title}`);
+                                   load();
+                                 } catch (err: any) {
                                   toast.error(err.message ?? "Erro ao eliminar.");
                                 } finally {
                                   setBusy(false);
@@ -478,11 +599,12 @@ function AdminPage() {
                         {t.image_paths.length > 0 && <span>{t.image_paths.length} img</span>}
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                      <Button size="sm" variant="outline" disabled={busy} onClick={() => openPreview(t)}><Eye className="h-4 w-4 mr-1" />Ver</Button>
-                      <Button size="sm" disabled={busy} onClick={() => approveTrack(t.id)}><Check className="h-4 w-4 mr-1" />Aprovar</Button>
-                      <Button size="sm" variant="outline" disabled={busy} onClick={() => openRejectDialog(t.id, t.title)}><X className="h-4 w-4 mr-1" />Rejeitar</Button>
-                    </div>
+                     <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                       <Button size="sm" variant="outline" disabled={busy} onClick={() => openPreview(t)}><Eye className="h-4 w-4 mr-1" />Ver</Button>
+                       <Button size="sm" disabled={busy} onClick={() => approveTrack(t.id)}><Check className="h-4 w-4 mr-1" />Aprovar</Button>
+                       <Button size="sm" variant="outline" disabled={busy} onClick={() => openRejectDialog(t.id, t.title, "needs_fix")}><Wrench className="h-4 w-4 mr-1" />Correção</Button>
+                       <Button size="sm" variant="outline" disabled={busy} onClick={() => openRejectDialog(t.id, t.title)}><X className="h-4 w-4 mr-1" />Rejeitar</Button>
+                     </div>
                   </div>
                 ))}
                 <Pager page={curTracksPage} totalPages={totalTracksPages} onChange={setTracksPage} />
@@ -578,14 +700,54 @@ function AdminPage() {
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" />Mensagens ({messages.length}){unreadCount > 0 && <Badge>{unreadCount} novas</Badge>}</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Mail className="h-5 w-5" />Mensagens ({filteredMessages.length}){unreadCount > 0 && <Badge>{unreadCount} por ler</Badge>}</CardTitle>
                   <Button size="sm" variant="outline" onClick={() => { setSortDesc((v) => !v); setMsgPage(1); }}>
                     <ArrowUpDown className="h-4 w-4 mr-1" />{sortDesc ? "Mais recentes" : "Mais antigas"}
                   </Button>
                 </div>
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <Button size="sm" variant={msgFilter === "all" ? "default" : "outline"} className="h-7 px-2.5 text-xs" onClick={() => { setMsgFilter("all"); setMsgPage(1); }}>
+                    Todas ({messages.length})
+                  </Button>
+                  {MSG_STATUSES.map((s) => (
+                    <Button
+                      key={s.value}
+                      size="sm"
+                      variant={msgFilter === s.value ? "default" : "outline"}
+                      className="h-7 px-2.5 text-xs"
+                      onClick={() => { setMsgFilter(s.value); setMsgPage(1); }}
+                    >
+                      {s.label} ({statusCount(s.value)})
+                    </Button>
+                  ))}
+                </div>
+                {checkedIds.length > 0 && (
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+                    <p className="text-sm font-medium">{checkedIds.length} selecionada(s)</p>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setCheckedIds([])}>Limpar</Button>
+                      <Button size="sm" variant="destructive" disabled={busy} onClick={deleteSelected}>
+                        <Trash2 className="h-4 w-4 mr-1" />Eliminar
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
-                {messages.length === 0 && <p className="text-sm text-muted-foreground py-6 text-center">Sem mensagens.</p>}
+                {filteredMessages.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-6 text-center">
+                    {messages.length === 0 ? "Sem mensagens." : "Nenhuma mensagem neste estado."}
+                  </p>
+                )}
+                {pageMessages.length > 0 && (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <Checkbox
+                      checked={pageMessages.every((m) => checkedIds.includes(m.id))}
+                      onCheckedChange={() => toggleCheckAll()}
+                    />
+                    Selecionar desta página
+                  </label>
+                )}
                 {pageMessages.map((m) => (
                   <div
                     key={m.id}
@@ -593,28 +755,36 @@ function AdminPage() {
                     tabIndex={0}
                     onClick={() => openDetails(m)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetails(m); } }}
-                    className={`rounded-lg border p-3 space-y-2 cursor-pointer transition-colors hover:bg-muted/40 ${m.is_read ? "border-border bg-background" : "border-primary/40 bg-primary/5"}`}
+                    className={`rounded-lg border p-3 cursor-pointer transition-colors hover:bg-muted/40 ${m.is_read ? "border-border bg-background" : "border-primary/40 bg-primary/5"}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
+                    <div className="flex items-start gap-2">
+                      <div className="pt-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={checkedIds.includes(m.id)}
+                          onCheckedChange={() => toggleCheck(m.id)}
+                          aria-label={`Selecionar mensagem de ${m.name}`}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-medium">{m.name}</p>
-                          {!m.is_read && <Badge>Nova</Badge>}
+                          <Badge variant={msgStatusVariant(m.status)}>{msgStatusLabel(m.status)}</Badge>
+                          {!m.is_read && <Badge variant="outline" className="text-[10px]">Por ler</Badge>}
                         </div>
                         {m.email && m.email !== "—" && <p className="text-xs text-muted-foreground break-all">{m.email}</p>}
                         <p className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString("pt-PT")}</p>
+                        {m.subject && <p className="text-sm font-medium">{m.subject}</p>}
+                        <p className="text-sm whitespace-pre-wrap line-clamp-3">{m.message}</p>
                       </div>
                       <div className="flex gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleRead(m)}>
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => toggleRead(m)} title="Marcar como lida / não lida">
                           {m.is_read ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}
                         </Button>
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => deleteMessage(m.id)}>
+                        <Button size="sm" variant="outline" disabled={busy} onClick={() => deleteMessage(m.id)} title="Eliminar mensagem">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    {m.subject && <p className="text-sm font-medium">{m.subject}</p>}
-                    <p className="text-sm whitespace-pre-wrap line-clamp-3">{m.message}</p>
                   </div>
                 ))}
                 <Pager page={curMsgPage} totalPages={totalMsgPages} onChange={setMsgPage} />
@@ -650,6 +820,56 @@ function AdminPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* REGISTO DE ATIVIDADE */}
+          <TabsContent value="activity">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <CardTitle className="flex items-center gap-2"><History className="h-5 w-5" />Registo de atividade ({filteredAudit.length})</CardTitle>
+                  <Input
+                    placeholder="Pesquisar por ação, pessoa ou detalhe..."
+                    value={auditQuery}
+                    onChange={(e) => { setAuditQuery(e.target.value); setAuditPage(1); }}
+                    className="w-full sm:w-80"
+                    maxLength={100}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground pt-1">
+                  Cada ação do administrador fica registada com quem fez e quando.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {filteredAudit.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-6 text-center">
+                    {auditQuery ? "Nada encontrado para esta pesquisa." : "Ainda não há ações registadas."}
+                  </p>
+                )}
+                {pageAudit.map((a) => (
+                  <div key={a.id} className="rounded-lg border border-border p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="text-xs">{a.action}</Badge>
+                          <span className="text-xs text-muted-foreground">{a.entity}</span>
+                        </p>
+                        {a.details && <p className="mt-1 text-sm">{a.details}</p>}
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {a.actor_name ?? "Sistema"} · {new Date(a.created_at).toLocaleString("pt-PT")}
+                        </p>
+                      </div>
+                      {a.entity_id && (
+                        <p className="text-[10px] font-mono text-muted-foreground shrink-0 max-w-[110px] truncate" title={a.entity_id}>
+                          {a.entity_id}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <Pager page={curAuditPage} totalPages={totalAuditPages} onChange={setAuditPage} />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -680,6 +900,9 @@ function AdminPage() {
                 <Button variant="outline" disabled={busy} onClick={() => { const id = previewTrack.id; const title = previewTrack.title; setPreviewTrack(null); openRejectDialog(id, title); }}>
                   <X className="h-4 w-4 mr-1" />Rejeitar
                 </Button>
+                <Button variant="outline" disabled={busy} onClick={() => { const id = previewTrack.id; const title = previewTrack.title; setPreviewTrack(null); openRejectDialog(id, title, "needs_fix"); }}>
+                  <Wrench className="h-4 w-4 mr-1" />Pedir correção
+                </Button>
                 <Button disabled={busy} onClick={() => { const id = previewTrack.id; setPreviewTrack(null); approveTrack(id); }}>
                   <Check className="h-4 w-4 mr-1" />Aprovar
                 </Button>
@@ -693,18 +916,30 @@ function AdminPage() {
       <Dialog open={!!rejectTarget} onOpenChange={(o) => { if (!o) { setRejectTarget(null); setRejectReason(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rejeitar conteúdo</DialogTitle>
+            <DialogTitle>{rejectMode === "needs_fix" ? "Pedir correção" : "Rejeitar conteúdo"}</DialogTitle>
             <DialogDescription>{rejectTarget?.title}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>Motivo da rejeição *</Label>
-            <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} maxLength={500} rows={5} autoFocus placeholder="Mín. 3 caracteres." />
+            <Label>{rejectMode === "needs_fix" ? "O que precisa de ser corrigido? *" : "Motivo da rejeição *"}</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              maxLength={500}
+              rows={5}
+              autoFocus
+              placeholder={rejectMode === "needs_fix" ? "Ex.: o PDF está ilegível, envie nova versão." : "Mín. 3 caracteres."}
+            />
             <p className="text-xs text-muted-foreground">{rejectReason.length}/500</p>
+            <p className="text-xs text-muted-foreground">
+              {rejectMode === "needs_fix"
+                ? "A pessoa que enviou recebe uma notificação com o pedido e pode corrigir e pedir nova revisão."
+                : "A pessoa que enviou recebe uma notificação com o motivo."}
+            </p>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmRejectTrack} disabled={busy || rejectReason.trim().length < 3}>
-              <X className="h-4 w-4 mr-1" />Rejeitar
+            <Button variant={rejectMode === "needs_fix" ? "default" : "destructive"} onClick={confirmRejectTrack} disabled={busy || rejectReason.trim().length < 3}>
+              {rejectMode === "needs_fix" ? <><Wrench className="h-4 w-4 mr-1" />Pedir correção</> : <><X className="h-4 w-4 mr-1" />Rejeitar</>}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -729,7 +964,10 @@ function AdminPage() {
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{selected?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 flex-wrap">
+              {selected?.name}
+              {selected && <Badge variant={msgStatusVariant(selected.status)}>{msgStatusLabel(selected.status)}</Badge>}
+            </DialogTitle>
             <DialogDescription>{selected && new Date(selected.created_at).toLocaleString("pt-PT")}</DialogDescription>
           </DialogHeader>
           {selected && (
@@ -750,11 +988,35 @@ function AdminPage() {
                 <p className="text-xs text-muted-foreground">Mensagem</p>
                 <p className="text-sm whitespace-pre-wrap mt-1 rounded-md border border-border bg-muted/30 p-3 max-h-72 overflow-y-auto">{selected.message}</p>
               </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Estado</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {MSG_STATUSES.map((s) => (
+                    <Button
+                      key={s.value}
+                      size="sm"
+                      variant={(selected.status ?? "new") === s.value ? "default" : "outline"}
+                      className="h-7 px-2.5 text-xs"
+                      disabled={busy}
+                      onClick={() => setMsgStatus(selected, s.value)}
+                    >
+                      {s.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
           <DialogFooter className="gap-2">
             {selected && (
               <>
+                {selected.email && selected.email !== "—" && (
+                  <Button asChild variant="outline">
+                    <a href={`mailto:${selected.email}?subject=${encodeURIComponent("Re: " + (selected.subject || "A sua mensagem"))}`}>
+                      <MailOpen className="h-4 w-4 mr-1" />Responder por email
+                    </a>
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => toggleRead(selected)} disabled={busy}>
                   {selected.is_read ? <><Mail className="h-4 w-4 mr-1" />Marcar não lida</> : <><MailOpen className="h-4 w-4 mr-1" />Marcar lida</>}
                 </Button>
@@ -775,7 +1037,7 @@ function AdminPage() {
             <DialogDescription>
               Tem a certeza que quer remover <strong>{deleteUserTarget?.display_name ?? deleteUserTarget?.email}</strong> do sistema?
               <br /><br />
-              Isto remove o perfil e as permissões. Os hinos enviados por este utilizador permanecem na biblioteca (pertencentes ao sistema).
+              Isto remove o perfil, as permissões, os favoritos e as notificações desta pessoa. Os conteúdos enviados permanecem na biblioteca.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

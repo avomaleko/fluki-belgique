@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import jsPDF from "jspdf";
 import { MediaViewer } from "@/components/app/MediaViewer";
 import { TrackHistory } from "@/components/app/TrackHistory";
+import { FavoriteButton } from "@/components/app/FavoriteButton";
 
 export const Route = createFileRoute("/track/$id")({
   component: TrackPage,
@@ -108,7 +109,7 @@ function TrackPage() {
     const key = `viewed:${track.id}`;
     if (typeof window === "undefined" || sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");
-    supabase.rpc("increment_track_view", { _track_id: track.id });
+    supabase.rpc("increment_track_view", { _track_id: track.id }).then(() => {}, () => {});
   }, [track?.id, track?.status]);
 
   if (loading) return <div className="min-h-screen bg-background"><Header /><p className="container mx-auto p-8 text-muted-foreground">A carregar...</p></div>;
@@ -236,6 +237,7 @@ function TrackPage() {
         <div className="flex items-center justify-between mb-6 gap-2 flex-wrap">
           <Button variant="ghost" asChild><Link to="/library"><ArrowLeft className="h-4 w-4 mr-2" />Biblioteca</Link></Button>
           <div className="flex gap-2 flex-wrap">
+            <FavoriteButton trackId={track.id} withLabel />
             <Button variant="outline" size="sm" onClick={exportDetailsPdf}>
               <FileDown className="h-4 w-4 mr-2" />Exportar detalhes
             </Button>

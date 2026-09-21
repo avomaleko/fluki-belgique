@@ -153,7 +153,8 @@ export function AudioPlayer({ src, title, onPlay, className }: Props) {
               if (a) { a.volume = v; a.muted = v === 0; }
             }}
             aria-label="Volume"
-            className="h-1.5 w-20 cursor-pointer accent-[hsl(var(--primary))]"
+            className="h-1.5 w-20 cursor-pointer"
+            style={{ accentColor: "var(--primary)" }}
           />
         </div>
 
