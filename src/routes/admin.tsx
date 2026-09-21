@@ -963,7 +963,10 @@ function AdminPage() {
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{selected?.name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 flex-wrap">
+              {selected?.name}
+              {selected && <Badge variant={msgStatusVariant(selected.status)}>{msgStatusLabel(selected.status)}</Badge>}
+            </DialogTitle>
             <DialogDescription>{selected && new Date(selected.created_at).toLocaleString("pt-PT")}</DialogDescription>
           </DialogHeader>
           {selected && (
@@ -984,11 +987,35 @@ function AdminPage() {
                 <p className="text-xs text-muted-foreground">Mensagem</p>
                 <p className="text-sm whitespace-pre-wrap mt-1 rounded-md border border-border bg-muted/30 p-3 max-h-72 overflow-y-auto">{selected.message}</p>
               </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1.5">Estado</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {MSG_STATUSES.map((s) => (
+                    <Button
+                      key={s.value}
+                      size="sm"
+                      variant={(selected.status ?? "new") === s.value ? "default" : "outline"}
+                      className="h-7 px-2.5 text-xs"
+                      disabled={busy}
+                      onClick={() => setMsgStatus(selected, s.value)}
+                    >
+                      {s.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
           <DialogFooter className="gap-2">
             {selected && (
               <>
+                {selected.email && selected.email !== "—" && (
+                  <Button asChild variant="outline">
+                    <a href={`mailto:${selected.email}?subject=${encodeURIComponent("Re: " + (selected.subject || "A sua mensagem"))}`}>
+                      <MailOpen className="h-4 w-4 mr-1" />Responder por email
+                    </a>
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => toggleRead(selected)} disabled={busy}>
                   {selected.is_read ? <><Mail className="h-4 w-4 mr-1" />Marcar não lida</> : <><MailOpen className="h-4 w-4 mr-1" />Marcar lida</>}
                 </Button>
@@ -1009,7 +1036,7 @@ function AdminPage() {
             <DialogDescription>
               Tem a certeza que quer remover <strong>{deleteUserTarget?.display_name ?? deleteUserTarget?.email}</strong> do sistema?
               <br /><br />
-              Isto remove o perfil e as permissões. Os hinos enviados por este utilizador permanecem na biblioteca (pertencentes ao sistema).
+              Isto remove o perfil, as permissões, os favoritos e as notificações desta pessoa. Os conteúdos enviados permanecem na biblioteca.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
