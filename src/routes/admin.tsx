@@ -14,10 +14,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Check, X, Shield, Mail, Trash2, MailOpen, ArrowUpDown, ChevronLeft, ChevronRight, FileText, Eye, Music as MusicIcon, Tag, Plus, Pencil, Users, KeyRound, Inbox, ListChecks, FileCheck2, History } from "lucide-react";
+import { Check, X, Shield, Mail, Trash2, MailOpen, ArrowUpDown, ChevronLeft, ChevronRight, FileText, Eye, Music as MusicIcon, Tag, Plus, Pencil, Users, KeyRound, Inbox, ListChecks, FileCheck2, History, Wrench } from "lucide-react";
 import { getSignedUrl } from "@/lib/storage";
 import { deleteTrackAndAssets } from "@/lib/tracks";
 import { fetchCategories, useCategories } from "@/lib/categories";
+import { StatusBadge } from "@/components/app/StatusBadge";
 
 
 export const Route = createFileRoute("/admin")({
