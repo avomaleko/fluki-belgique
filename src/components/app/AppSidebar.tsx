@@ -1,14 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Home, Library, Music2, Mail, ExternalLink, Upload, Tag } from "lucide-react";
+import { Menu, Home, Library, Music2, Mail, ExternalLink, Upload, Tag, Heart, ListChecks, User as UserIcon, Shield } from "lucide-react";
 import { useState } from "react";
 import { useCategories } from "@/lib/categories";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AppSidebar() {
   const [open, setOpen] = useState(false);
   const { categories } = useCategories();
+  const { user, isAdmin } = useAuth();
   const close = () => setOpen(false);
+  const itemCls =
+    "flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-base font-medium shadow-sm hover:shadow-[var(--shadow-elegant)] hover:border-primary/40 hover:-translate-y-0.5 transition";
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -50,9 +54,27 @@ export function AppSidebar() {
             <span className="flex items-center gap-3"><Music2 className="h-5 w-5 text-primary" /> Partisolfa</span>
             <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
           </a>
-          <Link to="/contact" onClick={close} className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-base font-medium shadow-sm hover:shadow-[var(--shadow-elegant)] hover:border-primary/40 hover:-translate-y-0.5 transition">
+          <Link to="/contact" onClick={close} className={itemCls}>
             <Mail className="h-5 w-5 text-primary" /> Contacte-nos
           </Link>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <p className="px-2 mb-1 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">A minha área</p>
+            <Link to="/profile" onClick={close} className={itemCls}>
+              <UserIcon className="h-5 w-5 text-primary" /> {user ? "Perfil" : "Entrar na conta"}
+            </Link>
+            <Link to="/favorites" onClick={close} className={itemCls}>
+              <Heart className="h-5 w-5 text-primary" /> Favoritos
+            </Link>
+            <Link to="/my-submissions" onClick={close} className={itemCls}>
+              <ListChecks className="h-5 w-5 text-primary" /> Minhas submissões
+            </Link>
+            {isAdmin && (
+              <Link to="/admin" onClick={close} className={itemCls}>
+                <Shield className="h-5 w-5 text-primary" /> Administração
+              </Link>
+            )}
+          </div>
 
           {categories.length > 0 && (
             <div className="mt-4">

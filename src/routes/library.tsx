@@ -13,7 +13,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Search, Music, FileText, Image as ImgIcon, ArrowUpAZ, ChevronLeft, ChevronRight, ListFilter, X, Upload, Eye } from "lucide-react";
 
-type LibrarySearch = { q?: string; cats?: string; sort?: "asc" | "desc"; page?: number };
+type SortOption = "asc" | "desc" | "recent";
+type AudioFilter = "all" | "with" | "without";
+type LibrarySearch = { q?: string; cats?: string; sort?: SortOption; page?: number; audio?: AudioFilter };
 
 export const Route = createFileRoute("/library")({
   component: LibraryPage,
@@ -30,8 +32,9 @@ export const Route = createFileRoute("/library")({
   validateSearch: (s: Record<string, unknown>): LibrarySearch => ({
     q: typeof s.q === "string" ? s.q : undefined,
     cats: typeof s.cats === "string" ? s.cats : undefined,
-    sort: s.sort === "desc" ? "desc" : s.sort === "asc" ? "asc" : undefined,
+    sort: s.sort === "desc" ? "desc" : s.sort === "recent" ? "recent" : s.sort === "asc" ? "asc" : undefined,
     page: typeof s.page === "number" ? s.page : typeof s.page === "string" ? parseInt(s.page, 10) || undefined : undefined,
+    audio: s.audio === "with" ? "with" : s.audio === "without" ? "without" : undefined,
   }),
 });
 
@@ -70,8 +73,9 @@ function LibraryPage() {
   const search = {
     q: raw.q ?? "",
     cats: raw.cats ?? "",
-    sort: raw.sort ?? "asc",
+    sort: (raw.sort ?? "asc") as SortOption,
     page: raw.page ?? 1,
+    audio: (raw.audio ?? "all") as AudioFilter,
   };
   const navigate = Route.useNavigate();
   const { categories } = useCategories();
@@ -112,7 +116,15 @@ function LibraryPage() {
   const applyCats = (list: string[]) => {
     navigate({ search: { ...search, cats: list.join(",") || undefined, page: 1 } });
   };
-  const toggleSort = () => navigate({ search: { ...search, sort: search.sort === "asc" ? "desc" : "asc" } });
+  const nextSort: Record<SortOption, SortOption> = { asc: "desc", desc: "recent", recent: "asc" };
+  const sortLabel: Record<SortOption, string> = { asc: "A → Z", desc: "Z → A", recent: "Mais recentes" };
+  const sortLabelShort: Record<SortOption, string> = { asc: "A-Z", desc: "Z-A", recent: "Recentes" };
+  const toggleSort = () => navigate({ search: { ...search, sort: nextSort[search.sort], page: 1 } });
+
+  const nextAudio: Record<AudioFilter, AudioFilter> = { all: "with", with: "without", without: "all" };
+  const audioLabel: Record<AudioFilter, string> = { all: "Todas", with: "Com áudio", without: "Sem áudio" };
+  const toggleAudio = () => navigate({ search: { ...search, audio: nextAudio[search.audio], page: 1 } });
+
   const setPage = (p: number) => navigate({ search: { ...search, page: p } });
 
   const filtered = useMemo(() => {
@@ -121,13 +133,16 @@ function LibraryPage() {
       const catOk = selectedCats.length === 0 || selectedCats.includes(t.category);
       const text = `${t.title} ${t.author ?? ""}`.toLowerCase();
       const qOk = q === "" || text.includes(q);
-      return catOk && qOk;
+      const audioOk =
+        search.audio === "all" ? true : search.audio === "with" ? !!t.audio_path : !t.audio_path;
+      return catOk && qOk && audioOk;
     });
-    list = [...list].sort((a, b) =>
-      search.sort === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title)
-    );
+    list = [...list].sort((a, b) => {
+      if (search.sort === "recent") return b.created_at.localeCompare(a.created_at);
+      return search.sort === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
+    });
     return list;
-  }, [tracks, search.q, selectedCats, search.sort]);
+  }, [tracks, search.q, selectedCats, search.sort, search.audio]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const page = Math.min(search.page, totalPages);
@@ -154,13 +169,22 @@ function LibraryPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Pesquisar por título ou autor..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" maxLength={100} />
+            <Input placeholder="Pesquisar por título ou por quem arranjou..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" maxLength={100} />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={toggleSort} className="flex-1 sm:flex-none shrink-0">
+            <Button variant="outline" onClick={toggleSort} className="flex-1 sm:flex-none shrink-0" title="Alterar ordenação">
               <ArrowUpAZ className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{search.sort === "asc" ? "A → Z" : "Z → A"}</span>
-              <span className="sm:hidden">{search.sort === "asc" ? "A-Z" : "Z-A"}</span>
+              <span className="hidden sm:inline">{sortLabel[search.sort]}</span>
+              <span className="sm:hidden">{sortLabelShort[search.sort]}</span>
+            </Button>
+            <Button
+              variant={search.audio === "all" ? "outline" : "secondary"}
+              onClick={toggleAudio}
+              className="flex-1 sm:flex-none shrink-0"
+              title="Filtrar por áudio"
+            >
+              <Music className="h-4 w-4 sm:mr-2" />
+              <span className="truncate">{audioLabel[search.audio]}</span>
             </Button>
             <Button asChild className="flex-1 sm:flex-none shrink-0">
               <Link to="/upload"><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enviar conteúdo</span><span className="sm:hidden">Enviar</span></Link>

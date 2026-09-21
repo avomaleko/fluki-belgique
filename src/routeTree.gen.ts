@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as MySubmissionsRouteImport } from './routes/my-submissions'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as HomeRouteImport } from './routes/home'
+import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -32,6 +34,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MySubmissionsRoute = MySubmissionsRouteImport.update({
   id: '/my-submissions',
   path: '/my-submissions',
@@ -45,6 +52,11 @@ const LibraryRoute = LibraryRouteImport.update({
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritesRoute = FavoritesRouteImport.update({
+  id: '/favorites',
+  path: '/favorites',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -88,9 +100,11 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/favorites': typeof FavoritesRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/my-submissions': typeof MySubmissionsRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
@@ -102,9 +116,11 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/favorites': typeof FavoritesRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/my-submissions': typeof MySubmissionsRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
@@ -117,9 +133,11 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
+  '/favorites': typeof FavoritesRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
   '/my-submissions': typeof MySubmissionsRoute
+  '/profile': typeof ProfileRoute
   '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
@@ -133,9 +151,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/favorites'
     | '/home'
     | '/library'
     | '/my-submissions'
+    | '/profile'
     | '/reset-password'
     | '/upload'
     | '/author/$name'
@@ -147,9 +167,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/favorites'
     | '/home'
     | '/library'
     | '/my-submissions'
+    | '/profile'
     | '/reset-password'
     | '/upload'
     | '/author/$name'
@@ -161,9 +183,11 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/contact'
+    | '/favorites'
     | '/home'
     | '/library'
     | '/my-submissions'
+    | '/profile'
     | '/reset-password'
     | '/upload'
     | '/author/$name'
@@ -176,9 +200,11 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
+  FavoritesRoute: typeof FavoritesRoute
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
   MySubmissionsRoute: typeof MySubmissionsRoute
+  ProfileRoute: typeof ProfileRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   UploadRoute: typeof UploadRoute
   AuthorNameRoute: typeof AuthorNameRoute
@@ -201,6 +227,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my-submissions': {
       id: '/my-submissions'
       path: '/my-submissions'
@@ -220,6 +253,13 @@ declare module '@tanstack/react-router' {
       path: '/home'
       fullPath: '/home'
       preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/favorites': {
+      id: '/favorites'
+      path: '/favorites'
+      fullPath: '/favorites'
+      preLoaderRoute: typeof FavoritesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -290,9 +330,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
+  FavoritesRoute: FavoritesRoute,
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
   MySubmissionsRoute: MySubmissionsRoute,
+  ProfileRoute: ProfileRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   UploadRoute: UploadRoute,
   AuthorNameRoute: AuthorNameRoute,
