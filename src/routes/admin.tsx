@@ -39,7 +39,8 @@ type Profile = {
   created_at?: string;
 };
 type RoleRow = { user_id: string; role: "admin" | "uploader" | "user" };
-type ContactMsg = { id: string; name: string; email: string | null; subject: string | null; message: string; created_at: string; is_read: boolean };
+type ContactMsg = { id: string; name: string; email: string | null; subject: string | null; message: string; created_at: string; is_read: boolean; status: string };
+type AuditEntry = { id: string; actor_id: string | null; actor_name: string | null; action: string; entity: string; entity_id: string | null; details: string | null; created_at: string };
 type PendingTrack = {
   id: string;
   title: string;
@@ -57,6 +58,15 @@ type AdminTrack = PendingTrack & { uploader_name?: string | null };
 
 
 const PAGE_SIZE = 25;
+
+const MSG_STATUSES: { value: string; label: string }[] = [
+  { value: "new", label: "Nova" },
+  { value: "in_review", label: "Em análise" },
+  { value: "answered", label: "Respondida" },
+  { value: "archived", label: "Arquivada" },
+];
+const msgStatusLabel = (s: string | null | undefined) =>
+  MSG_STATUSES.find((x) => x.value === (s ?? "new"))?.label ?? "Nova";
 
 function initialsOf(name: string) {
   const parts = (name || "U").trim().split(/\s+/);
@@ -91,6 +101,11 @@ function AdminPage() {
   const [tracksPage, setTracksPage] = useState(1);
   const [usersQuery, setUsersQuery] = useState("");
   const [selected, setSelected] = useState<ContactMsg | null>(null);
+  const [msgFilter, setMsgFilter] = useState<string>("all");
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditQuery, setAuditQuery] = useState("");
   const [pendingTracks, setPendingTracks] = useState<PendingTrack[]>([]);
   const [allTracks, setAllTracks] = useState<AdminTrack[]>([]);
   const [allTracksQuery, setAllTracksQuery] = useState("");
