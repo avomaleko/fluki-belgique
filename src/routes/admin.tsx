@@ -168,24 +168,6 @@ function AdminPage() {
     return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
   }, [isAdmin]);
 
-  if (loading) return <div className="min-h-screen bg-background"><Header /><p className="container mx-auto p-8">A carregar...</p></div>;
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto p-8 max-w-md">
-          <Card>
-            <CardContent className="py-10 text-center space-y-3">
-              <Shield className="h-10 w-10 mx-auto text-muted-foreground" />
-              <p>Acesso restrito a administradores.</p>
-              <Button asChild><Link to="/">Voltar</Link></Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   const logAdmin = (action: string, entity: string, entityId: string, details: string) => {
     // fire-and-forget: o registo de atividade nunca bloqueia a ação do administrador
