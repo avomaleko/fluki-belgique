@@ -1,1 +1,0 @@
-ALTER TYPE public.music_category ADD VALUE IF NOT EXISTS 'reflexao';
