@@ -899,6 +899,9 @@ function AdminPage() {
                 <Button variant="outline" disabled={busy} onClick={() => { const id = previewTrack.id; const title = previewTrack.title; setPreviewTrack(null); openRejectDialog(id, title); }}>
                   <X className="h-4 w-4 mr-1" />Rejeitar
                 </Button>
+                <Button variant="outline" disabled={busy} onClick={() => { const id = previewTrack.id; const title = previewTrack.title; setPreviewTrack(null); openRejectDialog(id, title, "needs_fix"); }}>
+                  <Wrench className="h-4 w-4 mr-1" />Pedir correção
+                </Button>
                 <Button disabled={busy} onClick={() => { const id = previewTrack.id; setPreviewTrack(null); approveTrack(id); }}>
                   <Check className="h-4 w-4 mr-1" />Aprovar
                 </Button>
@@ -912,18 +915,30 @@ function AdminPage() {
       <Dialog open={!!rejectTarget} onOpenChange={(o) => { if (!o) { setRejectTarget(null); setRejectReason(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rejeitar conteúdo</DialogTitle>
+            <DialogTitle>{rejectMode === "needs_fix" ? "Pedir correção" : "Rejeitar conteúdo"}</DialogTitle>
             <DialogDescription>{rejectTarget?.title}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>Motivo da rejeição *</Label>
-            <Textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} maxLength={500} rows={5} autoFocus placeholder="Mín. 3 caracteres." />
+            <Label>{rejectMode === "needs_fix" ? "O que precisa de ser corrigido? *" : "Motivo da rejeição *"}</Label>
+            <Textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              maxLength={500}
+              rows={5}
+              autoFocus
+              placeholder={rejectMode === "needs_fix" ? "Ex.: o PDF está ilegível, envie nova versão." : "Mín. 3 caracteres."}
+            />
             <p className="text-xs text-muted-foreground">{rejectReason.length}/500</p>
+            <p className="text-xs text-muted-foreground">
+              {rejectMode === "needs_fix"
+                ? "A pessoa que enviou recebe uma notificação com o pedido e pode corrigir e pedir nova revisão."
+                : "A pessoa que enviou recebe uma notificação com o motivo."}
+            </p>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => { setRejectTarget(null); setRejectReason(""); }}>Cancelar</Button>
-            <Button variant="destructive" onClick={confirmRejectTrack} disabled={busy || rejectReason.trim().length < 3}>
-              <X className="h-4 w-4 mr-1" />Rejeitar
+            <Button variant={rejectMode === "needs_fix" ? "default" : "destructive"} onClick={confirmRejectTrack} disabled={busy || rejectReason.trim().length < 3}>
+              {rejectMode === "needs_fix" ? <><Wrench className="h-4 w-4 mr-1" />Pedir correção</> : <><X className="h-4 w-4 mr-1" />Rejeitar</>}
             </Button>
           </DialogFooter>
         </DialogContent>
