@@ -117,6 +117,7 @@ function AdminPage() {
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null);
   const [previewImageUrls, setPreviewImageUrls] = useState<string[]>([]);
   const [rejectTarget, setRejectTarget] = useState<{ id: string; title: string } | null>(null);
+  const [rejectMode, setRejectMode] = useState<"rejected" | "needs_fix">("rejected");
   const [rejectReason, setRejectReason] = useState("");
   const [deleteUserTarget, setDeleteUserTarget] = useState<Profile | null>(null);
   const { categories } = useCategories();
@@ -325,23 +326,35 @@ function AdminPage() {
 
   const approveTrack = async (id: string) => {
     setBusy(true);
-    const { error } = await supabase.from("tracks").update({ status: "approved" }).eq("id", id);
+    const { error } = await supabase.from("tracks").update({ status: "approved", rejection_reason: null }).eq("id", id);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Conteúdo aprovado.");
+    logAdmin("aprovar", "música", id, `Música aprovada e publicada: ${trackLabel(id)}`);
     load();
   };
-  const openRejectDialog = (id: string, title: string) => { setRejectTarget({ id, title }); setRejectReason(""); };
+  const openRejectDialog = (id: string, title: string, mode: "rejected" | "needs_fix" = "rejected") => {
+    setRejectMode(mode);
+    setRejectTarget({ id, title });
+    setRejectReason("");
+  };
   const confirmRejectTrack = async () => {
     if (!rejectTarget) return;
     const reason = rejectReason.trim();
     if (reason.length < 3) return toast.error("Indique um motivo (mín. 3 caracteres).");
     if (reason.length > 500) return toast.error("Motivo muito longo.");
+    const status = rejectMode;
     setBusy(true);
-    const { error } = await supabase.from("tracks").update({ status: "rejected", rejection_reason: reason }).eq("id", rejectTarget.id);
+    const { error } = await supabase.from("tracks").update({ status, rejection_reason: reason }).eq("id", rejectTarget.id);
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Rejeitado.");
+    toast.success(status === "needs_fix" ? "Correção pedida ao autor." : "Rejeitado.");
+    logAdmin(
+      status === "needs_fix" ? "pedir_correção" : "rejeitar",
+      "música",
+      rejectTarget.id,
+      `${status === "needs_fix" ? "Correção pedida" : "Rejeição"} de ${rejectTarget.title}: ${reason}`,
+    );
     setRejectTarget(null); setRejectReason(""); setPreviewTrack(null);
     load();
   };
@@ -359,6 +372,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Categoria criada.");
+    logAdmin("criar_categoria", "categoria", value, `Categoria criada: ${label}`);
     setNewCatLabel(""); fetchCategories(true);
   };
   const renameCategory = async () => {
@@ -370,6 +384,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Renomeada.");
+    logAdmin("renomear_categoria", "categoria", editCat.value, `Categoria renomeada: ${editCat.label} → ${label}`);
     setEditCat(null); fetchCategories(true);
   };
   const deleteCategory = async (value: string, label: string) => {
@@ -381,6 +396,7 @@ function AdminPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Eliminada.");
+    logAdmin("eliminar_categoria", "categoria", value, `Categoria eliminada: ${label}`);
     fetchCategories(true);
   };
 
