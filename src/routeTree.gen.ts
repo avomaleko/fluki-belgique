@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadRouteImport } from './routes/upload'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as MySubmissionsRouteImport } from './routes/my-submissions'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -29,6 +30,11 @@ const UploadRoute = UploadRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MySubmissionsRoute = MySubmissionsRouteImport.update({
+  id: '/my-submissions',
+  path: '/my-submissions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -84,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/my-submissions': typeof MySubmissionsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/my-submissions': typeof MySubmissionsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/my-submissions': typeof MySubmissionsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/upload': typeof UploadRoute
   '/author/$name': typeof AuthorNameRoute
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/home'
     | '/library'
+    | '/my-submissions'
     | '/reset-password'
     | '/upload'
     | '/author/$name'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/home'
     | '/library'
+    | '/my-submissions'
     | '/reset-password'
     | '/upload'
     | '/author/$name'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/home'
     | '/library'
+    | '/my-submissions'
     | '/reset-password'
     | '/upload'
     | '/author/$name'
@@ -166,6 +178,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
+  MySubmissionsRoute: typeof MySubmissionsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   UploadRoute: typeof UploadRoute
   AuthorNameRoute: typeof AuthorNameRoute
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-submissions': {
+      id: '/my-submissions'
+      path: '/my-submissions'
+      fullPath: '/my-submissions'
+      preLoaderRoute: typeof MySubmissionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library': {
@@ -272,6 +292,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
+  MySubmissionsRoute: MySubmissionsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   UploadRoute: UploadRoute,
   AuthorNameRoute: AuthorNameRoute,

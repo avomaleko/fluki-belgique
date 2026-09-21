@@ -104,6 +104,9 @@ function UploadPage() {
   const [submitting, setSubmitting] = useState(false);
   const [authorSuggestions, setAuthorSuggestions] = useState<string[]>([]);
   const [showAuthorList, setShowAuthorList] = useState(false);
+  const [newCatOpen, setNewCatOpen] = useState(false);
+  const [newCatLabel, setNewCatLabel] = useState("");
+  const [newCatBusy, setNewCatBusy] = useState(false);
   useEffect(() => {
     supabase
       .from("tracks")
