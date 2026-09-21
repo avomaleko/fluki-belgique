@@ -30,12 +30,12 @@ export function MediaViewer({ pdfPath, audioPath, imagePaths, title, allowDownlo
   const onPlay = () => {
     if (!countable || !trackId || playedRef.current) return;
     playedRef.current = true;
-    supabase.rpc("increment_track_play", { _track_id: trackId });
+    supabase.rpc("increment_track_play", { _track_id: trackId }).then(() => {}).catch(() => {});
   };
   const onDownload = () => {
     if (!countable || !trackId || downloadedRef.current) return;
     downloadedRef.current = true;
-    supabase.rpc("increment_track_download", { _track_id: trackId });
+    supabase.rpc("increment_track_download", { _track_id: trackId }).then(() => {}).catch(() => {});
   };
 
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);

@@ -108,7 +108,7 @@ function TrackPage() {
     const key = `viewed:${track.id}`;
     if (typeof window === "undefined" || sessionStorage.getItem(key)) return;
     sessionStorage.setItem(key, "1");
-    supabase.rpc("increment_track_view", { _track_id: track.id });
+    supabase.rpc("increment_track_view", { _track_id: track.id }).then(() => {}).catch(() => {});
   }, [track?.id, track?.status]);
 
   if (loading) return <div className="min-h-screen bg-background"><Header /><p className="container mx-auto p-8 text-muted-foreground">A carregar...</p></div>;

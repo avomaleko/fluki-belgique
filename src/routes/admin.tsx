@@ -176,7 +176,7 @@ function AdminPage() {
       _entity: entity,
       _entity_id: entityId,
       _details: details.slice(0, 500),
-    });
+    }).then(() => {}).catch(() => {});
   };
   const userLabel = (userId: string) => {
     const p = profiles.find((x) => x.id === userId);
