@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useCategories } from "@/lib/categories";
+import { NotificationBell } from "@/components/app/NotificationBell";
 
 function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -93,9 +94,11 @@ export function Header() {
         </div>
 
         <nav className="flex items-center gap-1 sm:gap-2">
+          <NotificationBell />
           <Button variant="ghost" size="sm" onClick={toggleTheme} aria-label="Alternar tema">
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
+
 
           <Button size="sm" asChild className="shadow-sm">
             <Link to="/upload"><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enviar</span></Link>
