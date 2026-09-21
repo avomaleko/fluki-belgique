@@ -13,7 +13,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Search, Music, FileText, Image as ImgIcon, ArrowUpAZ, ChevronLeft, ChevronRight, ListFilter, X, Upload, Eye } from "lucide-react";
 
-type LibrarySearch = { q?: string; cats?: string; sort?: "asc" | "desc"; page?: number };
+type SortOption = "asc" | "desc" | "recent";
+type AudioFilter = "all" | "with" | "without";
+type LibrarySearch = { q?: string; cats?: string; sort?: SortOption; page?: number; audio?: AudioFilter };
 
 export const Route = createFileRoute("/library")({
   component: LibraryPage,
@@ -30,8 +32,9 @@ export const Route = createFileRoute("/library")({
   validateSearch: (s: Record<string, unknown>): LibrarySearch => ({
     q: typeof s.q === "string" ? s.q : undefined,
     cats: typeof s.cats === "string" ? s.cats : undefined,
-    sort: s.sort === "desc" ? "desc" : s.sort === "asc" ? "asc" : undefined,
+    sort: s.sort === "desc" ? "desc" : s.sort === "recent" ? "recent" : s.sort === "asc" ? "asc" : undefined,
     page: typeof s.page === "number" ? s.page : typeof s.page === "string" ? parseInt(s.page, 10) || undefined : undefined,
+    audio: s.audio === "with" ? "with" : s.audio === "without" ? "without" : undefined,
   }),
 });
 
