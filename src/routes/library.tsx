@@ -169,13 +169,22 @@ function LibraryPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Pesquisar por título ou autor..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" maxLength={100} />
+            <Input placeholder="Pesquisar por título ou por quem arranjou..." value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" maxLength={100} />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={toggleSort} className="flex-1 sm:flex-none shrink-0">
+            <Button variant="outline" onClick={toggleSort} className="flex-1 sm:flex-none shrink-0" title="Alterar ordenação">
               <ArrowUpAZ className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{search.sort === "asc" ? "A → Z" : "Z → A"}</span>
-              <span className="sm:hidden">{search.sort === "asc" ? "A-Z" : "Z-A"}</span>
+              <span className="hidden sm:inline">{sortLabel[search.sort]}</span>
+              <span className="sm:hidden">{sortLabelShort[search.sort]}</span>
+            </Button>
+            <Button
+              variant={search.audio === "all" ? "outline" : "secondary"}
+              onClick={toggleAudio}
+              className="flex-1 sm:flex-none shrink-0"
+              title="Filtrar por áudio"
+            >
+              <Music className="h-4 w-4 sm:mr-2" />
+              <span className="truncate">{audioLabel[search.audio]}</span>
             </Button>
             <Button asChild className="flex-1 sm:flex-none shrink-0">
               <Link to="/upload"><Upload className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Enviar conteúdo</span><span className="sm:hidden">Enviar</span></Link>

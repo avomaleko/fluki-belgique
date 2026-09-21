@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, Home, Library, Music2, Mail, ExternalLink, Upload, Tag } from "lucide-react";
+import { Menu, Home, Library, Music2, Mail, ExternalLink, Upload, Tag, Heart, ListChecks, User as UserIcon, Shield } from "lucide-react";
 import { useState } from "react";
 import { useCategories } from "@/lib/categories";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AppSidebar() {
   const [open, setOpen] = useState(false);
