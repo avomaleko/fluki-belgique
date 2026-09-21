@@ -73,8 +73,9 @@ function LibraryPage() {
   const search = {
     q: raw.q ?? "",
     cats: raw.cats ?? "",
-    sort: raw.sort ?? "asc",
+    sort: (raw.sort ?? "asc") as SortOption,
     page: raw.page ?? 1,
+    audio: (raw.audio ?? "all") as AudioFilter,
   };
   const navigate = Route.useNavigate();
   const { categories } = useCategories();
@@ -115,7 +116,15 @@ function LibraryPage() {
   const applyCats = (list: string[]) => {
     navigate({ search: { ...search, cats: list.join(",") || undefined, page: 1 } });
   };
-  const toggleSort = () => navigate({ search: { ...search, sort: search.sort === "asc" ? "desc" : "asc" } });
+  const nextSort: Record<SortOption, SortOption> = { asc: "desc", desc: "recent", recent: "asc" };
+  const sortLabel: Record<SortOption, string> = { asc: "A → Z", desc: "Z → A", recent: "Mais recentes" };
+  const sortLabelShort: Record<SortOption, string> = { asc: "A-Z", desc: "Z-A", recent: "Recentes" };
+  const toggleSort = () => navigate({ search: { ...search, sort: nextSort[search.sort], page: 1 } });
+
+  const nextAudio: Record<AudioFilter, AudioFilter> = { all: "with", with: "without", without: "all" };
+  const audioLabel: Record<AudioFilter, string> = { all: "Todas", with: "Com áudio", without: "Sem áudio" };
+  const toggleAudio = () => navigate({ search: { ...search, audio: nextAudio[search.audio], page: 1 } });
+
   const setPage = (p: number) => navigate({ search: { ...search, page: p } });
 
   const filtered = useMemo(() => {
@@ -124,13 +133,16 @@ function LibraryPage() {
       const catOk = selectedCats.length === 0 || selectedCats.includes(t.category);
       const text = `${t.title} ${t.author ?? ""}`.toLowerCase();
       const qOk = q === "" || text.includes(q);
-      return catOk && qOk;
+      const audioOk =
+        search.audio === "all" ? true : search.audio === "with" ? !!t.audio_path : !t.audio_path;
+      return catOk && qOk && audioOk;
     });
-    list = [...list].sort((a, b) =>
-      search.sort === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title)
-    );
+    list = [...list].sort((a, b) => {
+      if (search.sort === "recent") return b.created_at.localeCompare(a.created_at);
+      return search.sort === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
+    });
     return list;
-  }, [tracks, search.q, selectedCats, search.sort]);
+  }, [tracks, search.q, selectedCats, search.sort, search.audio]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const page = Math.min(search.page, totalPages);
