@@ -482,6 +482,7 @@ function AdminPage() {
             <TabsTrigger value="users" className="gap-1.5"><Users className="h-4 w-4" />Utilizadores</TabsTrigger>
             <TabsTrigger value="messages" className="gap-1.5"><Mail className="h-4 w-4" />Mensagens {unreadCount > 0 && <Badge variant="default" className="h-5 ml-1">{unreadCount}</Badge>}</TabsTrigger>
             <TabsTrigger value="categories" className="gap-1.5"><Tag className="h-4 w-4" />Categorias</TabsTrigger>
+            <TabsTrigger value="activity" className="gap-1.5"><History className="h-4 w-4" />Atividade</TabsTrigger>
           </TabsList>
 
           {/* TODOS OS CONTEÚDOS */}
@@ -522,7 +523,7 @@ function AdminPage() {
                             <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground items-center">
                               {t.author && <span>por {t.author}</span>}
                               <Badge variant="secondary" className="text-xs">{t.category}</Badge>
-                              <Badge variant={t.status === "approved" ? "default" : t.status === "rejected" ? "destructive" : "outline"} className="text-xs">{t.status}</Badge>
+                              <StatusBadge status={t.status} className="text-xs" />
                               <span>· {new Date(t.created_at).toLocaleDateString("pt-PT")}</span>
                             </div>
                             <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
@@ -545,11 +546,12 @@ function AdminPage() {
                               onClick={async () => {
                                 if (!confirm(`Eliminar "${t.title}"? Remove PDF, áudio e imagens.`)) return;
                                 setBusy(true);
-                                try {
-                                  await deleteTrackAndAssets({ id: t.id, pdf_path: t.pdf_path, audio_path: t.audio_path, image_paths: t.image_paths });
-                                  toast.success("Conteúdo eliminado.");
-                                  load();
-                                } catch (err: any) {
+                                 try {
+                                   await deleteTrackAndAssets({ id: t.id, pdf_path: t.pdf_path, audio_path: t.audio_path, image_paths: t.image_paths });
+                                   toast.success("Conteúdo eliminado.");
+                                   logAdmin("eliminar_musica", "música", t.id, `Conteúdo eliminado: ${t.title}`);
+                                   load();
+                                 } catch (err: any) {
                                   toast.error(err.message ?? "Erro ao eliminar.");
                                 } finally {
                                   setBusy(false);
@@ -593,11 +595,12 @@ function AdminPage() {
                         {t.image_paths.length > 0 && <span>{t.image_paths.length} img</span>}
                       </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                      <Button size="sm" variant="outline" disabled={busy} onClick={() => openPreview(t)}><Eye className="h-4 w-4 mr-1" />Ver</Button>
-                      <Button size="sm" disabled={busy} onClick={() => approveTrack(t.id)}><Check className="h-4 w-4 mr-1" />Aprovar</Button>
-                      <Button size="sm" variant="outline" disabled={busy} onClick={() => openRejectDialog(t.id, t.title)}><X className="h-4 w-4 mr-1" />Rejeitar</Button>
-                    </div>
+                     <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                       <Button size="sm" variant="outline" disabled={busy} onClick={() => openPreview(t)}><Eye className="h-4 w-4 mr-1" />Ver</Button>
+                       <Button size="sm" disabled={busy} onClick={() => approveTrack(t.id)}><Check className="h-4 w-4 mr-1" />Aprovar</Button>
+                       <Button size="sm" variant="outline" disabled={busy} onClick={() => openRejectDialog(t.id, t.title, "needs_fix")}><Wrench className="h-4 w-4 mr-1" />Correção</Button>
+                       <Button size="sm" variant="outline" disabled={busy} onClick={() => openRejectDialog(t.id, t.title)}><X className="h-4 w-4 mr-1" />Rejeitar</Button>
+                     </div>
                   </div>
                 ))}
                 <Pager page={curTracksPage} totalPages={totalTracksPages} onChange={setTracksPage} />
