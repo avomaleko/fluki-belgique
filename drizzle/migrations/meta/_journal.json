@@ -15,6 +15,13 @@
       "when": 1789958690710,
       "tag": "0001_restore_handle_new_user_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790120336713,
+      "tag": "0002_add_second_admin_email",
+      "breakpoints": true
     }
   ]
 }
