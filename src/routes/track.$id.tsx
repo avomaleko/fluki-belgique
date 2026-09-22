@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { categoryLabel, fetchCategories } from "@/lib/categories";
 import { ArrowLeft, Trash2, FileDown, Pencil, AlertCircle, Hourglass, CheckCircle2, Eye, Download, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
 import { MediaViewer } from "@/components/app/MediaViewer";
 import { TrackHistory } from "@/components/app/TrackHistory";
 import { FavoriteButton } from "@/components/app/FavoriteButton";
@@ -145,7 +144,8 @@ function TrackPage() {
     setTrack({ ...track, status: "pending", rejection_reason: null });
   };
 
-  const exportDetailsPdf = () => {
+  const exportDetailsPdf = async () => {
+    const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 48;

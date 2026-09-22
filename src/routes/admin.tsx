@@ -659,10 +659,10 @@ function AdminPage() {
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <Avatar className="h-10 w-10"><AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">{initialsOf(p.display_name ?? p.email ?? "U")}</AvatarFallback></Avatar>
                           <div className="min-w-0">
-                            <p className="font-medium truncate flex items-center gap-2">
+                            <div className="font-medium truncate flex items-center gap-2">
                               {p.display_name ?? p.email}
                               {isSelf && <Badge variant="outline" className="text-[10px]">você</Badge>}
-                            </p>
+                            </div>
                             <p className="text-xs text-muted-foreground break-all">{p.email}</p>
                             <div className="mt-1 flex flex-wrap gap-1">
                               {rs.map((r) => <Badge key={r} variant={r === "admin" ? "default" : "secondary"} className="text-[10px]">{r}</Badge>)}
@@ -849,10 +849,10 @@ function AdminPage() {
                   <div key={a.id} className="rounded-lg border border-border p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="secondary" className="text-xs">{a.action}</Badge>
                           <span className="text-xs text-muted-foreground">{a.entity}</span>
-                        </p>
+                        </div>
                         {a.details && <p className="mt-1 text-sm">{a.details}</p>}
                         <p className="mt-1 text-xs text-muted-foreground">
                           {a.actor_name ?? "Sistema"} · {new Date(a.created_at).toLocaleString("pt-PT")}

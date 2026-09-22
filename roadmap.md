@@ -35,5 +35,9 @@
 
 ## 7. Final
 - [x] mobile-first (testado a 390px)
-- [ ] aviso de marcação `<div>` dentro de `<p>` nos separadores (gera erro de hidratação na consola)
-- [ ] typecheck/build finais depois das últimas alterações
+- [x] aviso de marcação `<div>` dentro de `<p>` nos separadores (gera erro de hidratação na consola)
+- [x] typecheck/build finais depois das últimas alterações
+
+## 8. Otimização
+- [x] avomaleko@gmail.com passa a administrador ao criar conta
+- [x] ferramenta de PDF só carrega ao exportar (página da música mais leve)
