@@ -35,7 +35,7 @@ export function AppSidebar() {
         </SheetHeader>
 
         <nav className="mt-6 flex flex-col gap-2 px-2 overflow-y-auto pb-6">
-          <Link to="/" onClick={close} className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-base font-medium shadow-sm hover:shadow-[var(--shadow-elegant)] hover:border-primary/40 hover:-translate-y-0.5 transition">
+          <Link to="/home" onClick={close} className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-base font-medium shadow-sm hover:shadow-[var(--shadow-elegant)] hover:border-primary/40 hover:-translate-y-0.5 transition">
             <Home className="h-5 w-5 text-primary" /> Página Inicial
           </Link>
           <Link to="/library" onClick={close} className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-4 py-3 text-base font-medium shadow-sm hover:shadow-[var(--shadow-elegant)] hover:border-primary/40 hover:-translate-y-0.5 transition">

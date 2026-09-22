@@ -22,7 +22,7 @@ export function Footer() {
           </Link>
 
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-            <Link to="/" className="text-muted-foreground hover:text-primary transition">
+            <Link to="/home" className="text-muted-foreground hover:text-primary transition">
               Início
             </Link>
             <Link to="/library" className="text-muted-foreground hover:text-primary transition">
