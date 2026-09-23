@@ -215,5 +215,9 @@
     background-color: oklch(1 0 0 / 15%);
     border-radius: 8px;
   }
+
+   #lovable-badge { 
+  display: none !important; 
+   }
 }
 
